@@ -12,16 +12,24 @@ export function getRouter() {
     routeTree,
     context,
     scrollRestoration: true,
+    // Preload on hover so data is usually already there when you click —
+    // the point is that switching tabs should feel instant.
     defaultPreload: 'intent',
     defaultPreloadDelay: 40,
-    defaultPreloadStaleTime: 10_000,
+    defaultPreloadStaleTime: 30_000,
+    // Routes (beforeLoad + loader) stay fresh for a while, so hopping between
+    // tabs doesn't re-run them every time. Session/data freshness is handled
+    // explicitly by react-query invalidation on auth + mutations.
+    defaultStaleTime: 30_000,
+    // Only surface the pending spinner if a switch is genuinely slow, and
+    // don't pad it with an artificial minimum once it appears.
+    defaultPendingMs: 400,
+    defaultPendingMinMs: 200,
     defaultPendingComponent: () => (
       <div className="grid min-h-[50vh] w-full place-items-center">
         <OrbitLoader size={140} />
       </div>
     ),
-    defaultPendingMs: 200,
-    defaultPendingMinMs: 450,
   })
 
   setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient })

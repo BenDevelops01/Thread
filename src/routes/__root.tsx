@@ -7,6 +7,7 @@ import {
   Outlet as RootOutlet,
 } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from 'sonner'
@@ -17,8 +18,8 @@ import appCss from '../styles.css?url'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { AppLoader, NavProgress } from '@/components/loader'
-import { fetchSession } from '@/server/auth'
 import type { SessionPayload } from '@/server/auth'
+import { sessionQuery } from '@/lib/queries/session'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { THEME_INIT_SCRIPT, isAppPath, themeById } from '@/lib/themes'
 import { ACTIVITY_COLOR_INIT_SCRIPT } from '@/lib/activity-color'
@@ -31,8 +32,13 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  beforeLoad: async () => {
-    const session = await fetchSession()
+  beforeLoad: async ({ context }) => {
+    const session = await context.queryClient.ensureQueryData({
+      ...sessionQuery(),
+      // Cached navigation stays instant; a stale session (premium redeem,
+      // sign-in/out, profile edit) still gets refreshed in the background.
+      revalidateIfStale: true,
+    })
     return { session } satisfies { session: SessionPayload }
   },
   head: () => ({
@@ -73,16 +79,22 @@ function RootDocument({
   const router = useRouter()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const { session } = Route.useRouteContext()
+  const queryClient = useQueryClient()
   const initialTheme = savedTheme ?? session.profile?.theme
   const themeEnabled = isAppPath(pathname)
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') void router.invalidate()
+      // Drop the cached session so the next `beforeLoad` refetches it, then
+      // invalidate the router so the redirect guards pick up the new state.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        queryClient.removeQueries({ queryKey: ['session'] })
+        void router.invalidate()
+      }
     })
     return () => data.subscription.unsubscribe()
-  }, [router])
+  }, [router, queryClient])
 
   return (
     <html lang="en" suppressHydrationWarning>

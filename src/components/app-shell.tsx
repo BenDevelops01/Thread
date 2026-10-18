@@ -22,6 +22,7 @@ import {
 import { Logo } from '@/components/logo'
 import { CommandPalette } from '@/components/command-palette'
 import { PremiumBadge } from '@/components/premium-gate'
+import { FocusTimerChip, SoundscapeChip } from '@/components/workspace-chips'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import {
@@ -112,6 +113,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               ⌘K
             </kbd>
           </button>
+
+          <div className="flex items-center gap-2">
+            <SoundscapeChip />
+            <FocusTimerChip />
+          </div>
         </header>
 
         <main className="min-w-0 flex-1">{children}</main>

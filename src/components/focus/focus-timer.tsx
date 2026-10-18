@@ -1,91 +1,32 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Play, Pause, RotateCcw, SkipForward, Timer, Coffee } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { ClientOnly } from '@/components/client-only'
 import { focusSessionsQuery } from '@/lib/queries/focus'
-import { logFocusSession } from '@/server/focus'
+import {
+  MODES,
+  fmt,
+  useFocusTimer,
+} from '@/components/focus/timer-provider'
 import { cn } from '@/lib/utils'
 
-type Mode = 'focus' | 'short' | 'long'
-
-const MODES: { id: Mode; label: string; seconds: number }[] = [
-  { id: 'focus', label: 'Focus', seconds: 25 * 60 },
-  { id: 'short', label: 'Short break', seconds: 5 * 60 },
-  { id: 'long', label: 'Long break', seconds: 15 * 60 },
-]
-
-function fmt(total: number) {
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
+import type { FocusMode } from '@/components/focus/timer-provider'
 
 export function FocusTimer() {
-  const queryClient = useQueryClient()
   const { data: sessions = [] } = useQuery(focusSessionsQuery())
-  const [mode, setMode] = useState<Mode>('focus')
-  const [secondsLeft, setSecondsLeft] = useState(MODES[0].seconds)
-  const [running, setRunning] = useState(false)
-  const [round, setRound] = useState(1)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const total = MODES.find((m) => m.id === mode)!.seconds
-  const progress = 1 - secondsLeft / total
-
-  const logMutation = useMutation({
-    mutationFn: (vars: { mode: Mode; seconds: number }) =>
-      logFocusSession({
-        data: { mode: vars.mode, duration_seconds: vars.seconds, completed: true },
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['focus-sessions'] })
-      void queryClient.invalidateQueries({ queryKey: ['activity'] })
-    },
-  })
-
-  const finish = useRef<() => void>(() => {})
-  finish.current = () => {
-    setRunning(false)
-    if (mode === 'focus') {
-      logMutation.mutate({ mode, seconds: total })
-      toast.success('Focus session complete', { description: 'Take a breath.' })
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        new Notification('Focus complete', { body: 'Nice work — time for a break.' })
-      }
-      setRound((r) => (r + 1) % 4)
-    } else {
-      toast.success('Break over', { description: 'Ready for another round?' })
-    }
-    const next = mode === 'focus' ? (round % 4 === 0 ? 'long' : 'short') : 'focus'
-    setMode(next)
-    setSecondsLeft(MODES.find((m) => m.id === next)!.seconds)
-  }
-
-  useEffect(() => {
-    if (!running) return
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          finish.current()
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [running])
-
-  useEffect(() => {
-    document.title = running ? `${fmt(secondsLeft)} · Thread` : 'Thread — one calm place to think and ship'
-    return () => {
-      document.title = 'Thread — one calm place to think and ship'
-    }
-  }, [running, secondsLeft])
+  const {
+    mode,
+    running,
+    secondsLeft,
+    progress,
+    round,
+    toggle,
+    reset,
+    switchMode,
+    skip,
+  } = useFocusTimer()
 
   const todayMinutes = useMemo(() => {
     const start = new Date()
@@ -97,12 +38,6 @@ export function FocusTimer() {
     )
   }, [sessions])
 
-  function switchMode(next: Mode) {
-    setRunning(false)
-    setMode(next)
-    setSecondsLeft(MODES.find((m) => m.id === next)!.seconds)
-  }
-
   const R = 120
   const C = 2 * Math.PI * R
 
@@ -113,7 +48,7 @@ export function FocusTimer() {
           {MODES.map((m) => (
             <button
               key={m.id}
-              onClick={() => switchMode(m.id)}
+              onClick={() => switchMode(m.id as FocusMode)}
               className={cn(
                 'rounded-full px-4 py-1.5 text-sm transition-colors',
                 mode === m.id ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
@@ -149,14 +84,14 @@ export function FocusTimer() {
         </div>
 
         <div className="mt-8 flex items-center gap-3">
-          <Button size="lg" onClick={() => setRunning((r) => !r)} className="px-8">
+          <Button size="lg" onClick={toggle} className="px-8">
             {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             {running ? 'Pause' : 'Start'}
           </Button>
-          <Button variant="outline" size="icon" onClick={() => switchMode(mode)} title="Reset">
+          <Button variant="outline" size="icon" onClick={reset} title="Reset">
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => finish.current()} title="Skip">
+          <Button variant="outline" size="icon" onClick={skip} title="Skip">
             <SkipForward className="h-4 w-4" />
           </Button>
         </div>

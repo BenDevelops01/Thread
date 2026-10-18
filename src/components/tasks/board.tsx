@@ -13,7 +13,6 @@ import { toast } from 'sonner'
 
 import { KanbanColumn } from '@/components/tasks/kanban-column'
 import { TaskDialog } from '@/components/tasks/task-dialog'
-import { useReminders } from '@/hooks/use-reminders'
 import { boardQuery } from '@/lib/queries/tasks'
 import {
   createColumn,
@@ -52,8 +51,6 @@ export function TaskBoard() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [creatingIn, setCreatingIn] = useState<string | null>(null)
-
-  useReminders(data?.tasks ?? [])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

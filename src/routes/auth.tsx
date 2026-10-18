@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link, redirect, useNavigate, useRouter } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { Loader2, Mail } from 'lucide-react'
@@ -37,6 +38,7 @@ function AuthPage() {
   const { mode } = Route.useSearch()
   const navigate = useNavigate()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -54,6 +56,7 @@ function AuthPage() {
       } else {
         await signInWithPassword(email, password)
       }
+      queryClient.removeQueries({ queryKey: ['session'] })
       await router.invalidate()
       await navigate({ to: '/' })
     } catch (error) {

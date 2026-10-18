@@ -151,6 +151,9 @@ function PremiumPanel() {
       if (!result.ok) throw new Error(result.message)
       toast.success(result.message)
       setCode('')
+      // Drop the cached session first, otherwise the router reload below would
+      // happily re-read the still-stale free plan from the query cache.
+      queryClient.removeQueries({ queryKey: ['session'] })
       await router.invalidate()
       await queryClient.invalidateQueries()
     } catch (error) {
