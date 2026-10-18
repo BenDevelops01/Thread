@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 
+import { DiscordIcon } from '@/components/brand-icons'
 import { Logo } from '@/components/logo'
+import { DISCORD_INVITE_URL } from '@/lib/site'
 
 const PRODUCT_LINKS = [
   { label: 'Notes', to: '/app/notes' as const },
@@ -29,6 +31,17 @@ export function SiteFooter() {
               <span className="h-1.5 w-1.5 rounded-full bg-foreground/70" />
               macOS app — coming soon
             </p>
+            <div className="mt-6">
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+              >
+                <DiscordIcon className="size-4" />
+                Join our Discord
+              </a>
+            </div>
           </div>
 
           <div>

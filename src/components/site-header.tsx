@@ -1,9 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowUpRight } from 'lucide-react'
 
+import { DiscordIcon } from '@/components/brand-icons'
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { useSession } from '@/lib/session'
+import { DISCORD_INVITE_URL } from '@/lib/site'
 
 export function SiteHeader() {
   const { user } = useSession()
@@ -15,6 +17,22 @@ export function SiteHeader() {
           <Logo />
         </Link>
         <nav className="flex items-center gap-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <a
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Join our Discord"
+              title="Join our Discord"
+            >
+              <DiscordIcon />
+            </a>
+          </Button>
           {user ? (
             <Button asChild size="sm">
               <Link to="/app">Open workspace</Link>
