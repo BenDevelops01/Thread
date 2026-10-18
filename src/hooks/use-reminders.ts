@@ -11,25 +11,25 @@ export function useReminders(tasks: Task[]) {
   const notified = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      void Notification.requestPermission()
-    }
-  }, [])
-
-  useEffect(() => {
     function check() {
       const now = Date.now()
       for (const task of tasks) {
         if (task.completed || !task.reminder_at) continue
         if (notified.current.has(task.id)) continue
         const at = new Date(task.reminder_at).getTime()
-        if (at <= now && at > now - 10 * 60_000) {
-          notified.current.add(task.id)
-          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        // Due, or slipped by within the last 10 minutes.
+        if (at > now || at <= now - 10 * 60_000) continue
+
+        notified.current.add(task.id)
+        if (typeof Notification !== 'undefined') {
+          // Only ask here — when there's something worth being told about —
+          // rather than on every page load.
+          if (Notification.permission === 'default') void Notification.requestPermission()
+          if (Notification.permission === 'granted') {
             new Notification('Thread reminder', { body: task.title })
           }
-          toast('Reminder', { description: task.title })
         }
+        toast('Reminder', { description: task.title })
       }
     }
 
