@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Loader2, Sparkles, Check, Trash2 } from 'lucide-react'
+import { Loader2, Sparkles, Check, Trash2, CreditCard } from 'lucide-react'
 
 import { PageHeader, PageBody } from '@/components/page-header'
 import { PremiumBadge, usePremium } from '@/components/premium-gate'
@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { redeemCode } from '@/server/premium'
+import { createCheckoutSession, createPortalSession } from '@/server/stripe'
 import { deleteAccount, updateProfile } from '@/server/account'
 import { useSession } from '@/lib/session'
 import { signOutClient } from '@/lib/auth'
@@ -142,6 +143,8 @@ function PremiumPanel() {
   const queryClient = useQueryClient()
   const [code, setCode] = useState('')
   const [redeeming, setRedeeming] = useState(false)
+  const [subscribing, setSubscribing] = useState(false)
+  const [managing, setManaging] = useState(false)
 
   async function redeem(e: React.FormEvent) {
     e.preventDefault()
@@ -160,6 +163,28 @@ function PremiumPanel() {
       toast.error(error instanceof Error ? error.message : 'Could not redeem code')
     } finally {
       setRedeeming(false)
+    }
+  }
+
+  async function subscribe() {
+    setSubscribing(true)
+    try {
+      const res = await createCheckoutSession()
+      if (res?.url) window.location.href = res.url
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not start checkout')
+      setSubscribing(false)
+    }
+  }
+
+  async function manageBilling() {
+    setManaging(true)
+    try {
+      const res = await createPortalSession()
+      if (res?.url) window.location.href = res.url
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not open billing portal')
+      setManaging(false)
     }
   }
 
@@ -183,30 +208,42 @@ function PremiumPanel() {
       </div>
 
       {!isPremium ? (
-        <form onSubmit={redeem} className="space-y-3">
-          <Label htmlFor="code">Redeem a code</Label>
-          <div className="flex gap-2">
-            <Input
-              id="code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="THREAD-XXXX-XXXX"
-              className="mono uppercase"
-              autoComplete="off"
-            />
-            <Button type="submit" disabled={redeeming || code.trim().length === 0}>
-              {redeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Unlock
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Codes are verified on the server. {user?.email ? `Signed in as ${user.email}.` : ''}
-          </p>
-        </form>
+        <div className="space-y-4">
+          <Button onClick={subscribe} disabled={subscribing}>
+            {subscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Subscribe to Premium
+          </Button>
+          <form onSubmit={redeem} className="space-y-3">
+            <Label htmlFor="code">Or redeem a code</Label>
+            <div className="flex gap-2">
+              <Input
+                id="code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="THREAD-XXXX-XXXX"
+                className="mono uppercase"
+                autoComplete="off"
+              />
+              <Button type="submit" variant="outline" disabled={redeeming || code.trim().length === 0}>
+                {redeeming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Unlock
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Codes are verified on the server. {user?.email ? `Signed in as ${user.email}.` : ''}
+            </p>
+          </form>
+        </div>
       ) : (
-        <div className="flex items-center gap-3 rounded-lg border border-thread/30 bg-thread/10 px-4 py-3 text-sm text-thread">
-          <Sparkles className="h-4 w-4" />
-          Premium features are unlocked across your workspace.
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-lg border border-thread/30 bg-thread/10 px-4 py-3 text-sm text-thread">
+            <Sparkles className="h-4 w-4" />
+            Premium features are unlocked across your workspace.
+          </div>
+          <Button variant="outline" onClick={manageBilling} disabled={managing}>
+            {managing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+            Manage billing
+          </Button>
         </div>
       )}
     </div>

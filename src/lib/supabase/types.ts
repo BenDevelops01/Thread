@@ -223,10 +223,17 @@ export type Database = {
       redeem_codes: TableDef<RedeemCode>
       redemptions: TableDef<Redemption>
       subscriptions: TableDef<Subscription>
+      stripe_customers: TableDef<StripeCustomer>
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
   }
+}
+
+export type StripeCustomer = {
+  user_id: string
+  stripe_customer_id: string
+  created_at: string
 }

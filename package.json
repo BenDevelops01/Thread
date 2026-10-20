@@ -46,6 +46,7 @@
     "react-dom": "^19.2.0",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
+    "stripe": "^23.0.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.3.6",
