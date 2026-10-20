@@ -65,13 +65,18 @@ function mapGithubEvent(e: GithubEvent) {
   const who = actor ? `${actor} ` : ''
 
   switch (e.type) {
-    case 'PushEvent':
+    case 'PushEvent': {
+      const size = e.payload.size ?? 0
+      // The public feed reports pushes as size 0 when the commits themselves
+      // are private, so only claim a count when there actually is one.
+      const count = size > 0 ? `${size} commit${size === 1 ? '' : 's'} to ` : 'to '
       return {
         ...base,
         type: 'push',
-        title: `${who}pushed ${e.payload.size ?? 0} commit${e.payload.size === 1 ? '' : 's'} to ${repo}`,
+        title: `${who}pushed ${count}${repo}`,
         description: shortRef(e.payload.ref),
       }
+    }
     case 'PullRequestEvent': {
       const pr = e.payload.pull_request
       const action = e.payload.action ?? 'updated'
