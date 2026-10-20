@@ -42,6 +42,16 @@ function shortRef(ref: string | undefined) {
   return ref?.replace(/^refs\/(heads|tags)\//, '') ?? null
 }
 
+interface GithubCommit {
+  sha: string
+  html_url: string
+  commit: {
+    message: string
+    author?: { name?: string; date?: string } | null
+    committer?: { name?: string; date?: string } | null
+  }
+}
+
 /** Humanize any GitHub event type into a readable title. Logs everything. */
 function mapGithubEvent(e: GithubEvent) {
   const repo = e.repo?.name ?? 'a repository'
@@ -193,25 +203,42 @@ function mapGithubEvent(e: GithubEvent) {
   }
 }
 
+/** Humanize a commit into a log line — the message is the useful part. */
+function mapCommit(login: string | null, repo: string, c: GithubCommit) {
+  const message = (c.commit.message.split('\n')[0] ?? '').trim().slice(0, 140)
+  return {
+    source: 'github',
+    type: 'commit',
+    title: `${login ? `${login} ` : ''}committed ${c.sha.slice(0, 7)} in ${repo}`,
+    description: message || null,
+    url: c.html_url,
+    occurred_at: c.commit.author?.date ?? c.commit.committer?.date ?? new Date().toISOString(),
+    meta: { external_id: `commit:${repo}:${c.sha}`, sha: c.sha, event_type: 'commit' },
+  }
+}
+
+type GithubEventInsert = {
+  user_id: string
+  source: string
+  type: string | null
+  title: string
+  description: string | null
+  url: string | null
+  occurred_at: string
+  meta: Record<string, unknown>
+}
+
+const MAX_REPOS = 25
+const COMMITS_PER_REPO = 100
+
 export async function syncGithub(
   supabase: Client,
   userId: string,
   token: string,
-  _login: string | null,
+  login: string | null,
 ) {
-  // Use the authenticated /user/events feed so PRIVATE repo activity is included
-  // (the /users/{login}/events feed is public-only). Fetch multiple pages for depth.
   const seen = await existingExternalIds(supabase, userId, 'github')
-  const rows: {
-    user_id: string
-    source: string
-    type: string | null
-    title: string
-    description: string | null
-    url: string | null
-    occurred_at: string
-    meta: Record<string, unknown>
-  }[] = []
+  const rows: GithubEventInsert[] = []
 
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -219,21 +246,61 @@ export async function syncGithub(
     'User-Agent': 'thread-app',
   }
 
-  let lastId: string | undefined
-  for (let page = 0; page < 3; page++) {
-    const url = `https://api.github.com/user/events?per_page=100${
-      lastId ? `&after=${lastId}` : ''
-    }`
-    const res = await fetch(url, { headers })
-    if (!res.ok) break
-    const events = (await res.json()) as GithubEvent[]
-    if (events.length === 0) break
-    for (const e of events) {
-      if (seen.has(e.id)) continue
-      rows.push({ ...mapGithubEvent(e), user_id: userId })
+  // 1. Activity feed.
+  // This used to call `GET /user/events`, which GitHub has since removed — it
+  // now 404s for every token, so the loop broke immediately and GitHub never
+  // contributed a single row. The feed is per-login instead. It's public-only,
+  // which is why commits are backfilled separately below.
+  let who = login
+  if (!who) {
+    const me = await fetch('https://api.github.com/user', { headers })
+    if (me.ok) who = ((await me.json()) as { login?: string }).login ?? null
+  }
+
+  if (who) {
+    for (let page = 1; page <= 3; page++) {
+      const res = await fetch(
+        `https://api.github.com/users/${encodeURIComponent(who)}/events?per_page=100&page=${page}`,
+        { headers },
+      )
+      if (!res.ok) break
+      const events = (await res.json()) as GithubEvent[]
+      if (events.length === 0) break
+      for (const e of events) {
+        if (seen.has(e.id)) continue
+        seen.add(e.id)
+        rows.push({ ...mapGithubEvent(e), user_id: userId })
+      }
+      if (events.length < 100) break
     }
-    lastId = events.at(-1)?.id
-    if (events.length < 100) break
+  }
+
+  // 2. Commits — the history the activity feed alone never mentions, including
+  // private repos. Repos are taken most-recently-pushed first.
+  const reposRes = await fetch(
+    `https://api.github.com/user/repos?sort=pushed&per_page=${MAX_REPOS}`,
+    { headers },
+  )
+  if (reposRes.ok) {
+    const repos = (await reposRes.json()) as unknown
+    if (Array.isArray(repos)) {
+      for (const repo of repos as { full_name?: string }[]) {
+        if (!repo.full_name) continue
+        const res = await fetch(
+          `https://api.github.com/repos/${repo.full_name}/commits?per_page=${COMMITS_PER_REPO}`,
+          { headers },
+        )
+        if (!res.ok) continue
+        const commits = (await res.json()) as unknown
+        if (!Array.isArray(commits)) continue
+        for (const c of commits as GithubCommit[]) {
+          const external = `commit:${repo.full_name}:${c.sha}`
+          if (seen.has(external)) continue
+          seen.add(external)
+          rows.push({ ...mapCommit(who, repo.full_name, c), user_id: userId })
+        }
+      }
+    }
   }
 
   if (rows.length === 0) return 0

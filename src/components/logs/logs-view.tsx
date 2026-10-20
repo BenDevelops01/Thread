@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Activity, ExternalLink, Loader2, Plug, ScrollText, Sparkles } from 'lucide-react'
+import {
+  Activity,
+  ExternalLink,
+  Loader2,
+  Plug,
+  RefreshCw,
+  ScrollText,
+  Sparkles,
+} from 'lucide-react'
+import { toast } from 'sonner'
 
 import { IntegrationLogo } from '@/components/integration-logos'
 import { syncActivity } from '@/server/integrations'
@@ -73,6 +82,46 @@ export function LogsView() {
       .catch(() => {})
   }, [queryClient])
 
+  const [syncing, setSyncing] = useState(false)
+
+  /** Pull on demand, and say what happened — the auto-sync above stays silent. */
+  async function runSync() {
+    setSyncing(true)
+    try {
+      const res = await syncActivity()
+      if (res.inserted > 0) {
+        toast.success(`Pulled ${res.inserted} new event${res.inserted === 1 ? '' : 's'}`)
+        void queryClient.invalidateQueries({ queryKey: ['events'] })
+      } else if (res.synced.length > 0) {
+        toast('Already up to date', { description: `Checked ${res.synced.join(', ')}` })
+      } else {
+        toast('Nothing connected yet', {
+          description: 'Connect GitHub under Plugins, then sync again.',
+        })
+      }
+      try {
+        window.localStorage.setItem(LAST_SYNC_KEY, String(Date.now()))
+      } catch {
+        // ignore
+      }
+    } catch {
+      toast.error('Could not sync right now. Try again in a moment.')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const syncButton = (variant: 'ghost' | 'outline') => (
+    <Button variant={variant} size="sm" onClick={runSync} disabled={syncing}>
+      {syncing ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <RefreshCw className="h-3.5 w-3.5" />
+      )}
+      Sync now
+    </Button>
+  )
+
   const grouped = useMemo(() => {
     const groups: { label: string; events: EventRow[] }[] = []
     for (const event of data?.events ?? []) {
@@ -106,12 +155,15 @@ export function LogsView() {
           <pre className="mt-4 max-w-full overflow-x-auto rounded-lg border border-border/60 bg-background/60 px-4 py-2.5 font-mono text-xs text-muted-foreground">
             {`$ thread logs --follow\n→ waiting for events from github, vercel…`}
           </pre>
-          <Button asChild className="mt-6">
-            <Link to="/app/plugins">
-              <Plug className="h-4 w-4" />
-              Set up integrations
-            </Link>
-          </Button>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button asChild>
+              <Link to="/app/plugins">
+                <Plug className="h-4 w-4" />
+                Set up integrations
+              </Link>
+            </Button>
+            {syncButton('outline')}
+          </div>
         </div>
       </div>
     )
@@ -124,8 +176,11 @@ export function LogsView() {
           <span className="inline-block h-2 w-2 rounded-full bg-thread" />
           thread logs --follow
         </span>
-        <span>
-          {data.events.length} events · {data.sources.join(' ')}
+        <span className="flex items-center gap-3">
+          <span>
+            {data.events.length} events · {data.sources.join(' ')}
+          </span>
+          {syncButton('ghost')}
         </span>
       </div>
 
