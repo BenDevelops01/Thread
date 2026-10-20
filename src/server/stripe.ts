@@ -33,9 +33,9 @@ export const createCheckoutSession = createServerFn({ method: 'POST' }).handler(
       })
     }
 
-    const origin = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'https://thread-cool.vercel.app'
+    const origin =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://thread-cool.vercel.app')
 
     const session: any = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -65,9 +65,9 @@ export const createPortalSession = createServerFn({ method: 'POST' }).handler(
 
     if (!existing?.stripe_customer_id) throw new Error('No billing account')
 
-    const origin = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'https://thread-cool.vercel.app'
+    const origin =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://thread-cool.vercel.app')
 
     const session: any = await stripe.billingPortal.sessions.create({
       customer: existing.stripe_customer_id,
