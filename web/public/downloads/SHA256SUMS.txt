@@ -1,1 +1,1 @@
-b0bed2dd728c010bea832a0506b29ec65dd73d6d3f59b47a7a0f60a2ff03bbdd  Thread-0.3.0-macOS-arm64.dmg
+c022681f3ab3bfa625a1519f25ed2b86a10cf0b682a2d6299f58ca08f602cbdb  Thread-0.3.0-macOS-arm64.dmg
