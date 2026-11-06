@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sun, Moon, Monitor, Check, KeyRound, ShieldCheck, Github, ArrowUpRight, Loader2 } from 'lucide-react';
 import { useTheme } from './theme';
-import { REPO } from './Brand';
+import { REPO, GithubIcon } from './Brand';
 export default function SettingsPanel({ db, session, isDemo, preferences, onPreferences, entitlement, refreshEntitlement }) {
  const { theme, setTheme } = useTheme();
  const [name, setName] = useState(preferences.display_name || ''), [interval, setIntervalValue] = useState(preferences.refresh_seconds || 15), [saving, setSaving] = useState(false), [notice, setNotice] = useState(''), [code, setCode] = useState(''), [redeeming, setRedeeming] = useState(false), [redeemNotice, setRedeemNotice] = useState('');
@@ -32,6 +32,6 @@ export default function SettingsPanel({ db, session, isDemo, preferences, onPref
   <div className="settings-save"><span role="status">{notice}</span><button className="btn dark small" disabled={saving}>{saving?<Loader2 size={14} className="spin"/>:<Check size={14}/>}Save settings</button></div>
  </form>
  <section className="settings-section redeem-section"><div className="settings-section-heading"><KeyRound size={21}/><div><h2>Redeem an access code</h2><p>A little more room, on us.</p></div><span className="plan-chip">{entitlement.pro?'PRO':'FREE'}</span></div>{entitlement.source==='code'?<div className="redeemed-state"><ShieldCheck size={24}/><div><strong>Complimentary Pro is active.</strong><p>50 active tasks. 10 connections. No subscription required.</p></div></div>:<><p className="redeem-description">Have a private Thread code? Redeem it here to unlock Pro on this account. Each code can be used once.</p><form onSubmit={redeem} className="redeem-form"><label>Access code<input type="password" autoComplete="off" autoCapitalize="none" spellCheck={false} value={code} onChange={e=>setCode(e.target.value)} maxLength={100} placeholder="Paste your private access code" required/></label><button className="btn dark" disabled={redeeming||!code.trim()}>{redeeming?<Loader2 size={15} className="spin"/>:<KeyRound size={15}/>}Redeem code</button></form></>}{redeemNotice&&<p className="notice" role="status">{redeemNotice}</p>}<p className="field-hint"><ShieldCheck size={12}/>Verified on the server. Your code is never stored on this device.</p></section>
- <a className="settings-source" href={REPO} target="_blank" rel="noreferrer"><Github size={18}/><div><strong>Built in the open.</strong><span>Explore Thread on GitHub.</span></div><ArrowUpRight size={17}/></a>
+ <a className="settings-source" href={REPO} target="_blank" rel="noreferrer"><GithubIcon/><div><strong>Built in the open.</strong><span>Explore Thread on GitHub.</span></div><ArrowUpRight size={17}/></a>
  </div>;
 }

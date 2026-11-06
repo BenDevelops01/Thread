@@ -1,6 +1,4 @@
-import React from 'react';
-import { Github, ArrowUpRight } from 'lucide-react';
-export const REPO = 'https://github.com/BenDevelops01/Thread';
-export function Mark() { return <span className="mark" aria-hidden="true"><img src="/brand/brand-mark.png" alt="" /></span>; }
-export function Logo() { return <a className="logo" href="/" aria-label="Thread home"><Mark /><span>thread</span></a>; }
-export function Footer() { return <footer className="footer wrap"><div><Logo /><p>A common thread for your AI work.</p></div><div className="footer-links"><a href={REPO} target="_blank" rel="noreferrer"><Github size={14} /> GitHub <ArrowUpRight size={12} /></a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/support">Support</a><span>© 2026 Thread</span></div></footer>; }
+import React from'react';
+export const REPO='https://github.com/BenDevelops01/Thread';export const DISCORD='https://discord.gg/7cWhAjKGW5';
+export function GithubIcon(){return <img className="github-mark" src="/providers/github.svg" alt=""/>}export function Mark(){return <span className="mark" aria-hidden="true"><img src="/brand/brand-mark.png" alt=""/></span>}export function Logo(){return <a className="logo" href="/" aria-label="Thread home"><Mark/><span>thread</span></a>}
+export function Footer(){return <footer className="new-footer"><Logo/><div><strong>Product</strong><a href="/app">Web app</a><a href="/mac">Mac app · coming soon</a><a href={REPO}><GithubIcon/> GitHub</a></div><div><strong>Resources</strong><a href="/support">Support</a><a href="/terms">Terms of service</a><a href="/privacy">Privacy policy</a></div><div><strong>Say hello</strong><a href="/contact">Contact</a><a href="/careers">Careers</a><a href="/discord">Join the Discord ↗</a></div><small>© 2026 Thread</small></footer>}

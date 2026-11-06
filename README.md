@@ -1,89 +1,72 @@
 # Thread
 
-A workspace for AI work that is happening in more than one place.
+A web front end for local models and coding agents. Run a model, follow real output, approve or deny supported agent operations, and inspect an execution log. There is no manual task-board workflow.
 
-Thread brings model runs, progress updates and tasks that need your attention into one dashboard. Run a local model through LM Studio, connect Ollama, or configure your own OpenAI, Anthropic or Google Gemini account in a local companion. Existing scripts can report progress through authenticated webhooks.
+## Connect your machine
 
-## What works
-
-- Private task tracking, project filters and an attention inbox.
-- Local bridge: model discovery, text generation, cancellation and workspace status updates.
-- LM Studio and Ollama on loopback; optional cloud-provider adapters with credentials kept in your bridge environment.
-- Light, dark and system appearance; saved account preferences.
-- Stripe subscription checkout and billing portal when deployment configuration is provided.
-- Single-use, server-verified complimentary Pro codes, stored as hashes.
-- Interactive landing-page playground with draggable windows and a sample agent handoff.
-
-Thread does not remotely control arbitrary coding-agent sessions. The landing playground is a labelled simulation; the Connections panel runs real models. Provider support is API-based and requires a compatible text model and your own provider access. No provider affiliation is implied.
-
-## Local models
-
-Requires Node.js 22.6 or newer and a local checkout of this repository.
-
-1. In LM Studio, load a text model, open **Developer**, and start its API server. The bridge defaults to loopback port 1234. Ollama defaults to port 11434.
-2. In Thread, open **Connections** and copy its bridge-start command.
-3. Run that command from this checkout. For example, supply your website origin as the final argument:
-
-```sh
-node connectors/local-bridge.mjs --origin YOUR_THREAD_ORIGIN
-```
-
-4. Copy the private pairing token printed in the terminal into Thread's pairing form. Keep the terminal running. Your browser may request local-network permission.
-5. Choose a provider and a model, enter a task, and run it. Signed-in runs create a saved task and use a revocable connection token for updates. The demo can run a real model without creating a cloud task.
-
-The companion listens only on loopback port 8787, accepts only the configured website origin, and requires its randomly generated pairing token. That token expires when the process stops. Local prompts and results stay between your browser and the companion; cloud providers receive requests only when you select them. Only task titles and status messages are synced to Thread.
-
-### Optional providers
-
-Copy `.env.bridge.example` to `.env.bridge.local` and fill only what you use. This file is ignored by Git. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and `GEMINI_API_KEY` are optional. LM Studio needs no cloud key; if its server requires authentication, set `LM_STUDIO_API_TOKEN` locally.
-
-```sh
-npm run bridge -- --origin YOUR_THREAD_ORIGIN
-```
-
-Provider keys are read by the companion process and are never sent to Thread's website. Do not paste them into task descriptions or publish your environment file. The companion supports text generation; tool execution, image generation and autonomous computer control are outside its scope.
-
-## Develop the web app
+Requires Node.js 22.6+ and a checkout of this repository. Start the bridge from the project directory you want agents to access, or set `THREAD_AGENT_ROOT` explicitly.
 
 ```sh
 npm ci
-cp .env.example .env.local
-# Fill the server configuration in .env.local using your own project values.
-npm run dev
+cp .env.bridge.example .env.bridge.local
+# Add only the local provider credentials you use; this file is ignored by Git.
+npm run bridge -- --origin YOUR_THREAD_WEBSITE_ORIGIN
 ```
 
-The local UI uses port 8746 and its API server uses port 8747. `npm run build` creates `web/dist`. Vercel uses the repository root and `vercel.json`; configure the same server variables in its environment settings.
+Open Thread, sign in, select **Connections**, and paste the private pairing key printed in the terminal. The bridge listens only on loopback port 8787, accepts the configured website origin and requires that key on every request. Your browser may ask for local-network access. Restarting the bridge invalidates the old pairing key.
 
-The browser talks to a same-origin proxy. The deployment-specific backend address and publishable key are supplied on the server, not embedded in frontend source. The proxy forwards a user's JWT and a publishable key, never an administrative key, and permits only the application's required routes. Authentication is still enforced by Supabase and row-level security.
+### Models
 
-## Backend setup
+For LM Studio, load a text model and start its Developer API server (default loopback port 1234). Ollama uses loopback port 11434. The bridge also supports OpenAI, Anthropic and Gemini using optional `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and `GEMINI_API_KEY` in its local environment. Model discovery and generation happen through the bridge. Keys are never uploaded to Thread. Cloud providers receive content only when you select them.
 
-Create a Supabase project, apply the SQL migrations in order and deploy the functions in `supabase/functions`. Functions use the platform's server-side environment. The `runtime_configuration` migration creates a private configuration table: an administrator must set `site_origin` to the deployed website origin. Set the same origin in Supabase Auth's allowed email redirects.
+### Codex
 
-All public workspace tables have owner-scoped RLS. Subscription and premium-grant writes are restricted to server functions. Rate-limit and redemption-code tables are private. Sign-in allows 10 attempts per account per 15-minute window; redemption also has attempt limits; direct platform authentication also needs its own platform-level protections.
+Install and authenticate the official Codex CLI, or configure its API key locally according to the provider's instructions. `CODEX_BIN` can specify the executable. Thread launches `codex app-server`, initializes its protocol, creates a workspace-restricted thread and starts a turn. Command and file-change approval requests appear in **Approvals**. Decisions are one-use; unsupported interactions fail closed. Existing unrelated desktop and CLI chats are not taken over.
 
-## Billing
+Protocol: [official Codex app-server documentation](https://developers.openai.com/codex/app-server).
 
-Configure the Stripe and signed-backend variables listed in `.env.example`. Supply your own recurring price ID. The webhook handler reconciles signed subscription events and handles refund, dispute and fraud-warning events. The billing portal supports cancellation. Configure Stripe's webhook at your deployment's `/api/stripe-webhook` endpoint and review tax registrations before accepting payments.
+### Claude Code
 
-Access codes are cryptographically generated outside the source tree. Only SHA-256 hashes are stored privately. Redemption is atomic, authenticated and rate-limited. A successful code grants the same server-enforced Pro limits as a subscription. Never put an actual access code into a migration, source file or public environment variable.
+Install and authenticate Claude Code locally, or configure `ANTHROPIC_API_KEY`. `CLAUDE_BIN` can specify the executable. Thread launches the CLI with structured output and a per-run `PreToolUse` hook. That hook blocks until you approve or deny the tool request from Thread. Timeout, cancellation or bridge failure denies it. Agent-specific policy and permission checks can still reject an approved tool.
 
-## Verification
+Hooks: [official Claude Code hooks reference](https://code.claude.com/docs/en/hooks).
+
+### Workspace and execution safety
+
+Start runs with a directory inside `THREAD_AGENT_ROOT` (default bridge working directory). Symlink escapes are rejected. Codex requests workspace-write sandboxing and untrusted approval policy. Claude Code retains its CLI permission system; Thread does not pass bypass-permissions flags. Approvals expire after five minutes. Stop a run from its output panel. This is an early integration, not a guarantee that generated code or commands are safe. Only connect a trusted browser and review requested operations.
+
+## Output and logs
+
+- Live runs show status and real output, with no fabricated percentage.
+- Agent prompts, output, event timelines, commands, file-change reports and approval decisions are stored under local `.thread-data/agents` with restricted file permissions.
+- The latest 20 model runs are saved under `.thread-data/models`; older model results are removed as new runs arrive.
+- Restarted in-progress runs are marked interrupted; Thread does not silently resume agent execution.
+- **Logs & shipped** shows reported events and exports JSON. A successful run is not proof that code was deployed. Inspect the actual artifacts and commands.
+- Logs can contain sensitive project content. They remain on your machine until deleted. Do not commit them.
+
+The existing cloud account backend stores preferences, plan entitlement and legacy task/webhook records. This release does not delete historical account data. Current model and agent runs use local storage rather than a cloud task board.
+
+## Web development
 
 ```sh
+cp .env.example .env.local
+# Fill server variables using your own backend configuration.
+npm run dev
 npm test
 npm run check:public
 npm run build
 ```
 
-The unit/integration suite uses a local fixture to verify pairing, origin restrictions, model execution and task-status delivery without paid API calls. Live database tests in `tests/redemption.mjs` and `tests/integration.mjs` require disposable test accounts and server configuration; they accept test inputs through stdin. Never use a real customer's access code for tests.
+UI port: 8746. API dev server: 8747. Build output: `web/dist`. Vercel uses `vercel.json` at repository root. Public routes include support, contact, careers, privacy, terms, Discord and the Mac-coming-soon page. No Mac release date or open job position is advertised.
 
-## Repository hygiene
+Supabase migrations and Edge Functions are in `supabase/`. The private runtime configuration holds the application origin; supply it before deploying auth. The browser uses an allowlisted same-origin proxy, forwarding the user's JWT and a publishable key, never an administrative key. Owner-scoped RLS protects account records. Sign-in allows ten attempts per email per 15-minute window.
 
-This repository stays public. Deployment-specific keys, backend endpoints, price IDs and private codes belong in environment configuration or private backend storage. Public documentation links, standard provider API addresses, loopback defaults and package-registry URLs are intentional. Old commits may still contain historical public configuration; cleaning the current tree does not erase Git history or revoke anything already copied.
+Stripe checkout and billing portal use deployment-only server variables. Existing complimentary Pro codes are validated atomically against private hashes; real codes never belong in source. Provider costs are separate from Thread subscriptions. Public source cleanup does not erase historical Git commits; deployment-specific configuration and credentials belong outside the repository.
 
-The obsolete Mac app, old downloads and unused UI have been removed from the current source tree. No production credentials are needed to clone, build or run the fixture tests.
+## Verification
+
+`npm test` covers bridge authentication, origin isolation, model execution with a local fixture, webhook status delivery, Codex protocol handling, one-use approval denial, workspace boundaries, Claude blocking-hook cancellation and persisted logs. Fixture tests do not claim a paid model run, a live Claude installation or a deployment. Live provider execution requires the user's configured CLI/model and credentials.
 
 ## Credits
 
-Thread uses React, Vite, Lucide and Supabase. Provider logo silhouettes are from Lobe Icons; vendor trademarks belong to their respective owners. See `web/public/providers/NOTICE.md` for attribution. The landing page's desktop-inspired presentation uses Thread's own artwork and interface content.
+React, Vite, Supabase, Lucide and Inter. Provider silhouettes are Lobe Icons; GitHub's mark is from Simple Icons (CC0). Marks remain their respective owners' trademarks. Thread uses its own content and brand assets. See `web/public/providers/NOTICE.md`.

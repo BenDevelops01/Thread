@@ -29,6 +29,30 @@
     {
       "source": "/support",
       "destination": "/"
+    },
+    {
+      "source": "/tos",
+      "destination": "/"
+    },
+    {
+      "source": "/contact",
+      "destination": "/"
+    },
+    {
+      "source": "/careers",
+      "destination": "/"
+    },
+    {
+      "source": "/jobs",
+      "destination": "/"
+    },
+    {
+      "source": "/discord",
+      "destination": "/"
+    },
+    {
+      "source": "/mac",
+      "destination": "/"
     }
   ],
   "headers": [

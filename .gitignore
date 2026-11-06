@@ -11,3 +11,5 @@ supabase/.temp/
 !.env.example
 !.env.bridge.example
 coverage/
+
+.thread-data/
