@@ -19,7 +19,7 @@ export default function SettingsPanel({ db, session, isDemo, preferences, onPref
   if(isDemo){setRedeemNotice('Sign in to redeem a code on your account.');return;}
   setRedeeming(true);
   try{
-   const result=await fetch('https://kytcrsxywqrxcqpembpp.supabase.co/functions/v1/thread-redeem',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({code:code.trim()})});
+   const result=await fetch('/api/cloud?path=functions/v1/thread-redeem',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({code:code.trim()})});
    const data=await result.json();if(!result.ok||!data.ok)throw Error(data.error||'Unable to redeem this code.');
    setCode('');await refreshEntitlement();setRedeemNotice('You’re in. Pro is unlocked on your account.');
   }catch(error){setRedeemNotice(error.message);}finally{setRedeeming(false);}

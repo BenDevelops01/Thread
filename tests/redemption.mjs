@@ -2,7 +2,7 @@ import{createClient}from'@supabase/supabase-js';
 import assert from'node:assert/strict';
 import readline from'node:readline/promises';
 const rl=readline.createInterface({input:process.stdin});const cfg=JSON.parse(await rl.question(''));rl.close();
-const url='https://kytcrsxywqrxcqpembpp.supabase.co',key='sb_publishable_dFVdUIaRzIlfF1OzKOGR4A_nMh9ihU_';
+const url=process.env.THREAD_SUPABASE_URL,key=process.env.THREAD_SUPABASE_PUBLIC_KEY;
 async function login(id){const r=await fetch(url+'/functions/v1/thread-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'qa-'+id+'@example.invalid',password:cfg.password,action:'signin'})});const data=await r.json();assert.equal(r.status,200,JSON.stringify(data));const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});await client.auth.setSession(data.session);return{client,token:data.session.access_token,id};}
 const users=await Promise.all([login(cfg.a),login(cfg.b)]);
 const a=users[0].client,b=users[1].client;

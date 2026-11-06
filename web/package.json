@@ -1,1 +1,20 @@
-{"name":"thread-interface","private":true,"type":"module","scripts":{"dev":"vite --host 127.0.0.1 --port 8746","build":"vite build"},"dependencies":{"@fontsource-variable/inter":"^5.3.0","@hugeicons/core-free-icons":"^4.4.0","@hugeicons/react":"^1.1.10","@lobehub/icons-static-svg":"^1.102.0","@supabase/supabase-js":"2.117.3","lucide-react":"^0.577.0","motion":"^12.23.12","react":"19.2.0","react-dom":"19.2.0","react-markdown":"^10.1.0","remark-gfm":"^4.0.1"},"devDependencies":{"@vitejs/plugin-react":"^6.0.1","vite":"^8.0.0","vite-plugin-singlefile":"^2.3.0"}}
+{
+  "name": "thread-interface",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 8746",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@supabase/supabase-js": "2.117.3",
+    "lucide-react": "^0.577.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "vite": "^8.0.0"
+  }
+}

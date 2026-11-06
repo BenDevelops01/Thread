@@ -1,43 +1,89 @@
-# Thread — keep your agents moving
+# Thread
 
-Early-access web app: a lively marketing site, sample dashboard, Supabase accounts, owner-scoped task tracking, attention inbox, revocable webhook connections and Stripe Pro integration.
+A workspace for AI work that is happening in more than one place.
 
-## Run
+Thread brings model runs, progress updates and tasks that need your attention into one dashboard. Run a local model through LM Studio, connect Ollama, or configure your own OpenAI, Anthropic or Google Gemini account in a local companion. Existing scripts can report progress through authenticated webhooks.
 
-`npm ci` then `npm run dev`. Production: `npm run build`; output `web/dist`. Vercel uses the repository root and the tracked `vercel.json`.
+## What works
 
-## Backend
+- Private task tracking, project filters and an attention inbox.
+- Local bridge: model discovery, text generation, cancellation and workspace status updates.
+- LM Studio and Ollama on loopback; optional cloud-provider adapters with credentials kept in your bridge environment.
+- Light, dark and system appearance; saved account preferences.
+- Stripe subscription checkout and billing portal when deployment configuration is provided.
+- Single-use, server-verified complimentary Pro codes, stored as hashes.
+- Interactive landing-page playground with draggable windows and a sample agent handoff.
 
-Project reference: `kytcrsxywqrxcqpembpp`. Only its public publishable key is used in browser code. Service-role keys are read from Supabase's server environment; never commit secret keys.
+Thread does not remotely control arbitrary coding-agent sessions. The landing playground is a labelled simulation; the Connections panel runs real models. Provider support is API-based and requires a compatible text model and your own provider access. No provider affiliation is implied.
 
-Migration: `supabase/migrations/20261106100302_agent_workspace.sql`. Functions: `thread-auth`, `thread-connect`, `thread-events`, `thread-billing`, `thread-stripe-webhook`.
+## Local models
 
-The auth endpoint enforces 10 attempts per 15-minute window per hashed email and proxy network identifier. It fails closed if the limiter fails. This protects the Thread endpoint; Supabase's direct Auth API also needs platform-level rate limits/CAPTCHA configuration. Do not claim the wrapper prevents all direct Auth API attacks. Production email confirmation redirects must allow `https://trythread.xyz/app` in Supabase Auth settings.
+Requires Node.js 22.6 or newer and a local checkout of this repository.
 
-All agent tables use RLS. Subscription writes are server-only. Connection hashes are not selectable by browser clients. Task counts and connection limits are enforced in database triggers. Webhook events accept 60 updates per connection per minute. No provider API keys are requested. Existing legacy tables are retained empty.
+1. In LM Studio, load a text model, open **Developer**, and start its API server. The bridge defaults to loopback port 1234. Ollama defaults to port 11434.
+2. In Thread, open **Connections** and copy its bridge-start command.
+3. Run that command from this checkout. For example, supply your website origin as the final argument:
 
-## Stripe billing
+```sh
+node connectors/local-bridge.mjs --origin YOUR_THREAD_ORIGIN
+```
 
-Vercel API routes use the existing server-only `STRIPE_SECRET_KEY`. A separate `THREAD_STRIPE_WEBHOOK_SECRET` verifies the new Stripe webhook at `https://trythread.xyz/api/stripe-webhook`. The `THREAD_BACKEND_SECRET` signs requests to a Supabase Edge Function; its counterpart is encrypted in Supabase Vault and exposed only to service-role code. No server secrets are included in browser code or source control.
+4. Copy the private pairing token printed in the terminal into Thread's pairing form. Keep the terminal running. Your browser may request local-network permission.
+5. Choose a provider and a model, enter a task, and run it. Signed-in runs create a saved task and use a revocable connection token for updates. The demo can run a real model without creating a cloud task.
 
-Product `prod_VZtcgjXC8Bq66k`; price `price_1UYjphL9PeXTq9CWPw0a6VAa`: AUD 15/month. Signed lifecycle events reconcile entitlements, with event-order checks. Refund, dispute and fraud warning events suspend access for review. No purchase is made during setup. Tax-inclusive pricing does not configure Stripe Tax: review registrations and tax settings before broader sales.
+The companion listens only on loopback port 8787, accepts only the configured website origin, and requires its randomly generated pairing token. That token expires when the process stops. Local prompts and results stay between your browser and the companion; cloud providers receive requests only when you select them. Only task titles and status messages are synced to Thread.
 
-The older `thread-billing` and `thread-stripe-webhook` Edge Functions remain disabled unless their independent Stripe secrets and enable flag are supplied; the web app uses `/api/billing` and `/api/stripe-webhook` on Vercel.
+### Optional providers
 
-## Current scope
+Copy `.env.bridge.example` to `.env.bridge.local` and fill only what you use. This file is ignored by Git. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and `GEMINI_API_KEY` are optional. LM Studio needs no cloud key; if its server requires authentication, set `LM_STUDIO_API_TOKEN` locally.
 
-Generic webhook updates and manual task management work. Native coding-app integrations, remote control, push notifications and historical event timelines are not included. The activity view shows the latest update per task. The old Mac source remains in the repository for reference and is not used by the new website.
+```sh
+npm run bridge -- --origin YOUR_THREAD_ORIGIN
+```
+
+Provider keys are read by the companion process and are never sent to Thread's website. Do not paste them into task descriptions or publish your environment file. The companion supports text generation; tool execution, image generation and autonomous computer control are outside its scope.
+
+## Develop the web app
+
+```sh
+npm ci
+cp .env.example .env.local
+# Fill the server configuration in .env.local using your own project values.
+npm run dev
+```
+
+The local UI uses port 8746 and its API server uses port 8747. `npm run build` creates `web/dist`. Vercel uses the repository root and `vercel.json`; configure the same server variables in its environment settings.
+
+The browser talks to a same-origin proxy. The deployment-specific backend address and publishable key are supplied on the server, not embedded in frontend source. The proxy forwards a user's JWT and a publishable key, never an administrative key, and permits only the application's required routes. Authentication is still enforced by Supabase and row-level security.
+
+## Backend setup
+
+Create a Supabase project, apply the SQL migrations in order and deploy the functions in `supabase/functions`. Functions use the platform's server-side environment. The `runtime_configuration` migration creates a private configuration table: an administrator must set `site_origin` to the deployed website origin. Set the same origin in Supabase Auth's allowed email redirects.
+
+All public workspace tables have owner-scoped RLS. Subscription and premium-grant writes are restricted to server functions. Rate-limit and redemption-code tables are private. Sign-in allows 10 attempts per account per 15-minute window; redemption also has attempt limits; direct platform authentication also needs its own platform-level protections.
+
+## Billing
+
+Configure the Stripe and signed-backend variables listed in `.env.example`. Supply your own recurring price ID. The webhook handler reconciles signed subscription events and handles refund, dispute and fraud-warning events. The billing portal supports cancellation. Configure Stripe's webhook at your deployment's `/api/stripe-webhook` endpoint and review tax registrations before accepting payments.
+
+Access codes are cryptographically generated outside the source tree. Only SHA-256 hashes are stored privately. Redemption is atomic, authenticated and rate-limited. A successful code grants the same server-enforced Pro limits as a subscription. Never put an actual access code into a migration, source file or public environment variable.
 
 ## Verification
 
-`npm run build`; `python3 tests/backend-smoke.py` (performs 11 invalid sign-in attempts and tests unauthenticated request rejection without creating an account). Database ownership isolation was tested in a rolled-back transaction. Run the smoke test only when ready to consume the network's 15-minute sign-in quota.
+```sh
+npm test
+npm run check:public
+npm run build
+```
 
-## Appearance, Settings and access codes
+The unit/integration suite uses a local fixture to verify pairing, origin restrictions, model execution and task-status delivery without paid API calls. Live database tests in `tests/redemption.mjs` and `tests/integration.mjs` require disposable test accounts and server configuration; they accept test inputs through stdin. Never use a real customer's access code for tests.
 
-The site uses the existing Thread PNG logo. Light/dark/system appearance is stored on the device and can be saved to owner-scoped `agent_preferences`; display name and refresh interval are persisted there too.
+## Repository hygiene
 
-`thread-redeem` verifies the signed-in user, rate-limits attempts, hashes the supplied code, and calls a service-only atomic redemption function. Raw codes are never committed or stored in the database. The private `thread_private.access_codes` table stores SHA-256 hashes for high-entropy, single-use codes. Successful redemption creates an owner-scoped complimentary Pro grant; the same entitlement function is used by both the UI and database plan limits. Stripe webhooks cannot erase a complimentary grant. Users with an active paid subscription must manage it before redeeming a code.
+This repository stays public. Deployment-specific keys, backend endpoints, price IDs and private codes belong in environment configuration or private backend storage. Public documentation links, standard provider API addresses, loopback defaults and package-registry URLs are intentional. Old commits may still contain historical public configuration; cleaning the current tree does not erase Git history or revoke anything already copied.
 
-The owner code is delivered separately as a private local file. It is not in this repository. Generate future codes with a cryptographic random generator (32 bytes minimum), store only their SHA-256 hash with an administrative database connection, and hand the original to the intended recipient privately. Do not put codes in migration files, frontend variables, logs or public configuration.
+The obsolete Mac app, old downloads and unused UI have been removed from the current source tree. No production credentials are needed to clone, build or run the fixture tests.
 
-`tests/redemption.mjs` accepts disposable test account IDs/password and a disposable code through stdin. It verifies preferences and isolation, concurrent single-use redemption, real premium limits, replay rejection, and attempt throttling. Never use the owner's unused code for QA.
+## Credits
+
+Thread uses React, Vite, Lucide and Supabase. Provider logo silhouettes are from Lobe Icons; vendor trademarks belong to their respective owners. See `web/public/providers/NOTICE.md` for attribution. The landing page's desktop-inspired presentation uses Thread's own artwork and interface content.

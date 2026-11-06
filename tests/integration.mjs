@@ -2,7 +2,7 @@ import{createClient}from'@supabase/supabase-js';
 import Stripe from 'stripe';
 import assert from 'node:assert/strict';
 let input='';for await(const chunk of process.stdin)input+=chunk;const cfg=JSON.parse(input);
-const base='https://kytcrsxywqrxcqpembpp.supabase.co',key='sb_publishable_dFVdUIaRzIlfF1OzKOGR4A_nMh9ihU_';
+const base=process.env.THREAD_SUPABASE_URL,key=process.env.THREAD_SUPABASE_PUBLIC_KEY;
 const clients=[];
 for(const id of[cfg.a,cfg.b]){const r=await fetch(base+'/functions/v1/thread-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'qa-'+id+'@example.invalid',password:cfg.password,action:'signin'})});const data=await r.json();assert.equal(r.status,200,JSON.stringify(data));const client=createClient(base,key,{auth:{persistSession:false,autoRefreshToken:false}});assert.equal((await client.auth.setSession(data.session)).error,null);clients.push(client);}
 const[a,b]=clients;const row={user_id:cfg.a,title:'QA webhook flow',agent:'QA agent',project:'Disposable QA',status:'working'};
@@ -20,7 +20,7 @@ const list=await a.from('agent_connections').select('id,name');assert.equal(list
 const send=()=>fetch(base+'/functions/v1/thread-events',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+conn.data.token},body:JSON.stringify({task_id:id,status:'attention',detail:'End-to-end webhook update verified'})});
 assert.equal((await send()).status,200);assert.equal((await a.from('agent_tasks').select('status').eq('id',id).single()).data.status,'attention');
 assert.equal((await a.from('agent_connections').update({revoked_at:new Date().toISOString()}).eq('id',list.data[0].id)).error,null);assert.equal((await send()).status,401);
-const bad=await fetch('https://trythread.xyz/api/stripe-webhook',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});assert.equal(bad.status,400);
-const payload=JSON.stringify({id:'evt_thread_qa',type:'customer.subscription.updated',created:Math.floor(Date.now()/1000),data:{object:{customer:'cus_thread_qa_nonexistent'}}});const sig=Stripe.webhooks.generateTestHeaderString({payload,secret:cfg.webhookSecret});const good=await fetch('https://trythread.xyz/api/stripe-webhook',{method:'POST',headers:{'Content-Type':'application/json','stripe-signature':sig},body:payload});assert.equal(good.status,200);
+const bad=await fetch(process.env.THREAD_SITE_ORIGIN+'/api/stripe-webhook',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});assert.equal(bad.status,400);
+const payload=JSON.stringify({id:'evt_thread_qa',type:'customer.subscription.updated',created:Math.floor(Date.now()/1000),data:{object:{customer:'cus_thread_qa_nonexistent'}}});const sig=Stripe.webhooks.generateTestHeaderString({payload,secret:cfg.webhookSecret});const good=await fetch(process.env.THREAD_SITE_ORIGIN+'/api/stripe-webhook',{method:'POST',headers:{'Content-Type':'application/json','stripe-signature':sig},body:payload});assert.equal(good.status,200);
 for(const c of clients)await c.auth.signOut();
 console.log('PASS: sign-in; owner isolation; task and connection quotas; subscription tamper rejection; webhook update; token revocation; invalid Stripe signature rejection; valid Stripe signature accepted.');

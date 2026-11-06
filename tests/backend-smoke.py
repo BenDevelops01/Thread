@@ -1,5 +1,5 @@
-import json, urllib.request, urllib.error, uuid
-base='https://kytcrsxywqrxcqpembpp.supabase.co/functions/v1/'
+import json, urllib.request, urllib.error, uuid, os
+base=os.environ['THREAD_SUPABASE_URL'].rstrip('/')+'/functions/v1/'
 def post(name,data,headers={}):
     req=urllib.request.Request(base+name,data=json.dumps(data).encode(),headers={'Content-Type':'application/json',**headers})
     try:

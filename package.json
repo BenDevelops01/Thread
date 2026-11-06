@@ -1,1 +1,19 @@
-{"name":"thread","version":"0.3.0","private":true,"type":"module","workspaces":["web"],"scripts":{"dev":"npm run dev --workspace=thread-interface","build":"npm run build --workspace=thread-interface","test":"desktop/scripts/test.sh","package:mac":"desktop/scripts/package.sh ./dist"},"dependencies":{"stripe":"23.0.0"}}
+{
+  "name": "thread",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.mjs",
+    "build": "npm run build --workspace=thread-interface",
+    "test": "node --test tests/*.test.mjs",
+    "bridge": "node --env-file-if-exists=.env.bridge.local connectors/local-bridge.mjs",
+    "check:public": "node scripts/check-public-source.mjs"
+  },
+  "dependencies": {
+    "stripe": "23.0.0"
+  }
+}

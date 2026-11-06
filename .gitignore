@@ -8,3 +8,6 @@ dist-app/
 *.log
 
 supabase/.temp/
+!.env.example
+!.env.bridge.example
+coverage/
