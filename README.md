@@ -31,3 +31,13 @@ Generic webhook updates and manual task management work. Native coding-app integ
 ## Verification
 
 `npm run build`; `python3 tests/backend-smoke.py` (performs 11 invalid sign-in attempts and tests unauthenticated request rejection without creating an account). Database ownership isolation was tested in a rolled-back transaction. Run the smoke test only when ready to consume the network's 15-minute sign-in quota.
+
+## Appearance, Settings and access codes
+
+The site uses the existing Thread PNG logo. Light/dark/system appearance is stored on the device and can be saved to owner-scoped `agent_preferences`; display name and refresh interval are persisted there too.
+
+`thread-redeem` verifies the signed-in user, rate-limits attempts, hashes the supplied code, and calls a service-only atomic redemption function. Raw codes are never committed or stored in the database. The private `thread_private.access_codes` table stores SHA-256 hashes for high-entropy, single-use codes. Successful redemption creates an owner-scoped complimentary Pro grant; the same entitlement function is used by both the UI and database plan limits. Stripe webhooks cannot erase a complimentary grant. Users with an active paid subscription must manage it before redeeming a code.
+
+The owner code is delivered separately as a private local file. It is not in this repository. Generate future codes with a cryptographic random generator (32 bytes minimum), store only their SHA-256 hash with an administrative database connection, and hand the original to the intended recipient privately. Do not put codes in migration files, frontend variables, logs or public configuration.
+
+`tests/redemption.mjs` accepts disposable test account IDs/password and a disposable code through stdin. It verifies preferences and isolation, concurrent single-use redemption, real premium limits, replay rejection, and attempt throttling. Never use the owner's unused code for QA.
