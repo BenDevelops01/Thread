@@ -13,7 +13,7 @@ cp .env.bridge.example .env.bridge.local
 npm run bridge -- --origin YOUR_THREAD_WEBSITE_ORIGIN
 ```
 
-Open Thread, sign in, select **Connections**, and paste the private pairing key printed in the terminal. The bridge listens only on loopback port 8787, accepts the configured website origin and requires that key on every request. Your browser may ask for local-network access. Restarting the bridge invalidates the old pairing key.
+Open Thread, sign in, select **Connections**, and paste the private pairing key printed in the terminal. The bridge listens only on loopback port 8787, accepts the configured website origin and requires that key on every request. Your browser may ask for local-network access. Restarting the bridge invalidates the old pairing key. Successful pairing is remembered in session storage for the signed-in account in the current browser tab, so a refresh reconnects automatically. Sign-out or Disconnect removes that saved pairing. Each workspace tab remains usable while disconnected and explains which connection it needs.
 
 ### Models
 
