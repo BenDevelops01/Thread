@@ -16,17 +16,13 @@ The auth endpoint enforces 10 attempts per 15-minute window per hashed email and
 
 All agent tables use RLS. Subscription writes are server-only. Connection hashes are not selectable by browser clients. Task counts and connection limits are enforced in database triggers. Webhook events accept 60 updates per connection per minute. No provider API keys are requested. Existing legacy tables are retained empty.
 
-## Stripe setup still required
+## Stripe billing
 
-Connected account: Thread. Product `prod_VZtcgjXC8Bq66k`; Pro monthly price `price_1UYjphL9PeXTq9CWPw0a6VAa` (AUD 15, tax-inclusive price setting). Checkout remains disabled until all these server secrets are configured:
+Vercel API routes use the existing server-only `STRIPE_SECRET_KEY`. A separate `THREAD_STRIPE_WEBHOOK_SECRET` verifies the new Stripe webhook at `https://trythread.xyz/api/stripe-webhook`. The `THREAD_BACKEND_SECRET` signs requests to a Supabase Edge Function; its counterpart is encrypted in Supabase Vault and exposed only to service-role code. No server secrets are included in browser code or source control.
 
-- `STRIPE_SECRET_KEY` (prefer a restricted key with the required customer, checkout, portal, subscription and charge permissions)
-- `STRIPE_WEBHOOK_SECRET`
-- `THREAD_BILLING_ENABLED=true`
+Product `prod_VZtcgjXC8Bq66k`; price `price_1UYjphL9PeXTq9CWPw0a6VAa`: AUD 15/month. Signed lifecycle events reconcile entitlements, with event-order checks. Refund, dispute and fraud warning events suspend access for review. No purchase is made during setup. Tax-inclusive pricing does not configure Stripe Tax: review registrations and tax settings before broader sales.
 
-Configure the Stripe webhook at `https://kytcrsxywqrxcqpembpp.supabase.co/functions/v1/thread-stripe-webhook` for checkout.session.completed, checkout.session.async_payment_succeeded, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted, invoice.paid, invoice.payment_failed, charge.dispute.created, charge.refunded and radar.early_fraud_warning.created. Enable the customer portal. Verify the integration in a Stripe sandbox before enabling live checkout. Taxes: confirm registrations and appropriate tax setup before charging customers; setting a tax-inclusive price does not configure Stripe Tax.
-
-Entitlements are reconciled from signed webhook events, never from the success redirect. Risk events suspend entitlements for review. No purchase has been made as part of setup.
+The older `thread-billing` and `thread-stripe-webhook` Edge Functions remain disabled unless their independent Stripe secrets and enable flag are supplied; the web app uses `/api/billing` and `/api/stripe-webhook` on Vercel.
 
 ## Current scope
 
