@@ -6,3 +6,5 @@ dist-app/
 .env*
 .DS_Store
 *.log
+
+supabase/.temp/

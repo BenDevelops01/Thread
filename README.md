@@ -1,36 +1,37 @@
-# Thread 0.3.0
+# Thread — keep your agents moving
 
-A React interface for your AI providers, packaged in a native macOS shell. The download website lives at https://trythread.xyz. Support: support@trythread.xyz.
+Early-access web app: a lively marketing site, sample dashboard, Supabase accounts, owner-scoped task tracking, attention inbox, revocable webhook connections and Stripe Pro integration.
 
-## Develop
+## Run
 
-```sh
-npm ci
-npm run dev
-```
+`npm ci` then `npm run dev`. Production: `npm run build`; output `web/dist`. Vercel uses the repository root and the tracked `vercel.json`.
 
-## Build, test, and package
+## Backend
 
-```sh
-npm run build
-npm test
-npm run package:mac
-```
+Project reference: `kytcrsxywqrxcqpembpp`. Only its public publishable key is used in browser code. Service-role keys are read from Supabase's server environment; never commit secret keys.
 
-`web/` contains the React website and desktop interface. `desktop/` contains the Swift native bridge, direct streaming provider clients, local workspace storage, Keychain access, and DMG packaging. The desktop interface is bundled into one HTML file. Its Content Security Policy permits network connections only to the existing Thread Supabase project for accounts and notes. AI provider requests stay in the native layer. The native bridge accepts messages only from the bundled main frame. External clicked HTTPS and email links open in the default system app.
+Migration: `supabase/migrations/20261106100302_agent_workspace.sql`. Functions: `thread-auth`, `thread-connect`, `thread-events`, `thread-billing`, `thread-stripe-webhook`.
 
-The neutral graphite palette replaces the previous purple treatment. The original Thread handwritten mark is reused from this repository's prior website. React Bits components: BranchedMenu, PromptBar, CallChip, LatticeLoader, ThoughtLine, SpotlightCard, and BlurText. Adaptations include controlled state, real model callbacks, truthful request activity, and prompt-library actions. Third-party notices and licences are in `web/public/third-party-notices.txt` and bundled inside the Mac app.
+The auth endpoint enforces 10 attempts per 15-minute window per hashed email and proxy network identifier. It fails closed if the limiter fails. This protects the Thread endpoint; Supabase's direct Auth API also needs platform-level rate limits/CAPTCHA configuration. Do not claim the wrapper prevents all direct Auth API attacks. Production email confirmation redirects must allow `https://trythread.xyz/app` in Supabase Auth settings.
 
-## Current features
+All agent tables use RLS. Subscription writes are server-only. Connection hashes are not selectable by browser clients. Task counts and connection limits are enforced in database triggers. Webhook events accept 60 updates per connection per minute. No provider API keys are requested. Existing legacy tables are retained empty.
 
-Eight provider presets plus custom OpenAI-compatible/Anthropic endpoints; streaming text; saved and searchable local conversations; branched navigation; model search and favorites; prompt library and slash commands; focus mode; per-thread instructions; copy; regenerate; and Markdown export. The website contains an explicitly labelled sample preview, privacy policy, terms, support, and changelog pages.
+## Stripe setup still required
 
-## Release limits
+Connected account: Thread. Product `prod_VZtcgjXC8Bq66k`; Pro monthly price `price_1UYjphL9PeXTq9CWPw0a6VAa` (AUD 15, tax-inclusive price setting). Checkout remains disabled until all these server secrets are configured:
 
-Apple silicon and macOS 14+. Supabase email/password sign-in, onboarding, private cloud notes, autosave, and local per-account note-draft recovery are included. Sessions are stored in Keychain. The current DMG is ad-hoc signed, not Developer ID signed or notarized. Gatekeeper may block downloaded copies. For normal public distribution, install a Developer ID identity, set `THREAD_SIGNING_IDENTITY`, then notarize and staple the signed artifact before publication. Update the early-access notices after notarization. AI requests have been exercised against a local fixture; real paid-provider requests require the user's keys. Live Supabase sign-in, profile/notes operations, and row ownership isolation were verified with synthetic QA accounts. Images, voice, attachments, model tool execution, automatic updates, and Intel builds are not included. Call chips show real native chat/model-list requests; Thought Line displays request progress, not inferred model reasoning.
+- `STRIPE_SECRET_KEY` (prefer a restricted key with the required customer, checkout, portal, subscription and charge permissions)
+- `STRIPE_WEBHOOK_SECRET`
+- `THREAD_BILLING_ENABLED=true`
 
-Chat history is stored locally at `~/Library/Application Support/Thread/workspace.json` and is not encrypted by Thread. Keys are stored in macOS Keychain under `xyz.trythread.mac.provider-keys`. Switching providers shares existing thread history with the new provider on the next send. Provider policies and billing apply.
+Configure the Stripe webhook at `https://kytcrsxywqrxcqpembpp.supabase.co/functions/v1/thread-stripe-webhook` for checkout.session.completed, checkout.session.async_payment_succeeded, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted, invoice.paid, invoice.payment_failed, charge.dispute.created, charge.refunded and radar.early_fraud_warning.created. Enable the customer portal. Verify the integration in a Stripe sandbox before enabling live checkout. Taxes: confirm registrations and appropriate tax setup before charging customers; setting a tax-inclusive price does not configure Stripe Tax.
 
-## Deployment
+Entitlements are reconciled from signed webhook events, never from the success redirect. Risk events suspend entitlements for review. No purchase has been made as part of setup.
 
-The root Vercel configuration builds `web/dist`. The production project is `thread` under `ben-develops1`; the production branch is `main`. The Mac package is distributed through `web/public/downloads/` with a SHA-256 file. Replace both when updating the release. Never place API keys, credentials, or `.env` files in the repository or client bundle.
+## Current scope
+
+Generic webhook updates and manual task management work. Native coding-app integrations, remote control, push notifications and historical event timelines are not included. The activity view shows the latest update per task. The old Mac source remains in the repository for reference and is not used by the new website.
+
+## Verification
+
+`npm run build`; `python3 tests/backend-smoke.py` (performs 11 invalid sign-in attempts and tests unauthenticated request rejection without creating an account). Database ownership isolation was tested in a rolled-back transaction. Run the smoke test only when ready to consume the network's 15-minute sign-in quota.
