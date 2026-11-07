@@ -1,8 +1,12 @@
 # Thread
 
-A web front end for local models and coding agents. Run a model, follow real output, approve or deny supported agent operations, and inspect an execution log. There is no manual task-board workflow.
+A friendly AI companion with four selectable buddies. Bring your OpenAI or Anthropic API key, then explain confusing text, rewrite a thought or brainstorm your next step. Keys are encrypted in Supabase Vault. Free includes 20 requests per UTC day; Pro is A$10/month with no daily Thread quota. Provider API usage is billed separately.
 
-## Connect your machine
+Start at `/app`. Sign in, choose your buddy, save and test a key in Connections, then ask a question. Native Mac integration is in development. The working browser companion only receives text you explicitly share.
+
+See **Thread Buddy (current product)** below for architecture, billing and deployment details. The following bridge documentation applies only to the preserved `/app/legacy` workspace.
+
+## Legacy workspace: connect your machine
 
 Requires Node.js 22.6+ and a checkout of this repository. Start the bridge from the project directory you want agents to access, or set `THREAD_AGENT_ROOT` explicitly.
 
