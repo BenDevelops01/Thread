@@ -1,8 +1,10 @@
 # Thread
 
-A friendly AI companion with four selectable buddies. Bring your OpenAI or Anthropic API key, then explain confusing text, rewrite a thought or brainstorm your next step. Keys are encrypted in Supabase Vault. Free includes 20 requests per UTC day; Pro is A$10/month with no daily Thread quota. Provider API usage is billed separately.
+A friendly AI companion with four selectable buddies. Use your signed-in official Codex CLI on Mac, or bring an OpenAI or Anthropic API key, then explain confusing text, rewrite a thought or brainstorm your next step. Keys are encrypted in Supabase Vault. Free includes 20 requests per UTC day; Pro is A$10/month with no daily Thread quota. Provider API usage is billed separately.
 
-Start at `/app`. Sign in, choose your buddy, save and test a key in Connections, then ask a question. Native Mac integration is in development. The working browser companion only receives text you explicitly share.
+Download the native Apple-silicon **Mac beta** at `/mac`. It includes a separate floating pet, conversation window, on-device dictation where supported, on-demand text context and approval-based window/text actions. Closing the conversation keeps the pet running. This build is ad-hoc signed and **not notarized**; the download page explains installation and limitations. Email sign-in only. A browser companion remains at `/app`.
+
+Native source and build instructions: [`desktop/README.md`](desktop/README.md).
 
 See **Thread Buddy (current product)** below for architecture, billing and deployment details. The following bridge documentation applies only to the preserved `/app/legacy` workspace.
 
@@ -77,12 +79,12 @@ React, Vite, Supabase, Lucide and Inter. Provider silhouettes are Lobe Icons; Gi
 
 ## Thread Buddy (current product)
 
-Thread is now a BYO-key AI companion. `/app` opens the browser buddy; the previous bridge console remains at `/app/legacy`. Native Mac desktop integration is in development and is not advertised as available.
+Thread is now a BYO-key AI companion. `/app` opens the browser buddy; the previous bridge console remains at `/app/legacy`. The native Mac beta is downloadable from `/mac`; beta and non-notarized status are clearly labelled.
 
 - Four original SVG characters: Bruno, Pip, Byte and Miso.
 - OpenAI Responses and Anthropic Messages connections; server-side key validation and encrypted Supabase Vault storage.
 - Free: 20 requests per UTC day. Pro: no daily quota, A$10/month for new subscriptions. Provider charges, message size limits and a 30-request/minute abuse limit apply to both tiers.
-- Conversations live in tab memory. The backend sends recent messages to the chosen provider. No continuous screen capture.
+- Browser conversations live in tab memory; native conversations and login tokens live in process memory. The native app shares selected text or one-shot OCR only on request. No continuous screen capture.
 - Keys can be replaced or deleted. Secret deletion also occurs when the owner account is deleted. Raw keys are never returned by the API.
 - `/api/billing` resolves the new Stripe price by lookup key `thread_buddy_pro_monthly_aud`; existing subscriptions are preserved. Webhooks recognise both the previous configured price and the buddy price.
 - Premium codes use the existing single-use hashed redemption mechanism. Generate codes outside source control; never commit plaintext codes or keys.
@@ -94,3 +96,7 @@ The landing page uses Magnet, TiltedCard, RotatingText and AnimatedContent from 
 ### Backend rollout
 
 Apply `20261107082716_buddy_companion.sql`, deploy `thread-buddy` with `_shared/common.ts`, then deploy the frontend/API. Vault must already be enabled. Provider/usage RPCs are executable only by service role; the Edge Function validates the caller through Supabase Auth before invoking them. Never expose the service-role key or grant clients access to Vault.
+
+### Verified beta limits
+
+The existing OpenAI key was validated and stored via the live Vault flow, but an actual model request returned `credit_balance_exhausted` / `insufficient_quota`. Thread now reports that billing issue and restores the request allowance. The actual native Swift model completed sign-in, authenticated quota reservation, a real Codex subscription conversation and a validated window-action preview without an API key. The native beta now supports that subscription path; API-key requests still require available provider credit. Microphone, screen capture and Accessibility actions require user-granted permissions; unsupported languages/apps report actionable errors.

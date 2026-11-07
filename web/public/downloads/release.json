@@ -1,0 +1,10 @@
+{
+  "version": "0.6.0",
+  "filename": "Thread-Beta-0.6.0-arm64.dmg",
+  "bytes": 987890,
+  "sha256": "138292e2935d3e33463b12ce9700d2a1e7113fda218fed5f1a17d11592ea92ab",
+  "architecture": "arm64",
+  "minimumMacOS": "14.0",
+  "notarized": false,
+  "channel": "beta"
+}

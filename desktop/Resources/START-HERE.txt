@@ -1,0 +1,32 @@
+THREAD BETA 0.6.0 — Apple silicon, macOS 14+
+
+Drag Thread Beta.app into Applications, then open it there.
+
+This early developer beta is ad-hoc signed, NOT notarized by Apple.
+If macOS blocks the first launch, dismiss the warning and open
+System Settings > Privacy & Security. If Open Anyway is available
+for Thread Beta, use it and confirm the launch yourself.
+Do not disable Gatekeeper or run security-removal commands.
+If macOS reports malware or corruption, stop and contact support.
+
+Click the floating pet or press Option-Command-Space to talk.
+Closing the conversation window keeps the pet running.
+Use the menu bar paw icon to pause following, hide the pet or quit.
+
+Sign in or create your account with email.
+In Connections, choose My Codex subscription to use the official
+Codex CLI signed into ChatGPT, or connect an OpenAI/Anthropic key.
+Your Codex plan limits or provider API charges apply. API keys are
+encrypted in Supabase Vault; Codex credentials stay with Codex.
+
+Dictation requests microphone and speech permission when started.
+On-device recognition requires a supported language. Screen OCR
+runs only when you choose Share context; review text before sending.
+Window movement and text insertion require Accessibility permission
+and approval for EACH action. Some apps do not support these actions.
+
+Free: 20 requests per UTC day. Pro: A$10/month, no daily Thread quota.
+Provider charges, size limits and anti-abuse rate limits still apply.
+Sessions live in memory until you quit. No automatic updates yet.
+
+Support, source, download checksum and privacy: https://trythread.xyz/mac
