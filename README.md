@@ -70,3 +70,23 @@ Stripe checkout and billing portal use deployment-only server variables. Existin
 ## Credits
 
 React, Vite, Supabase, Lucide and Inter. Provider silhouettes are Lobe Icons; GitHub's mark is from Simple Icons (CC0). Marks remain their respective owners' trademarks. Thread uses its own content and brand assets. See `web/public/providers/NOTICE.md`.
+
+## Thread Buddy (current product)
+
+Thread is now a BYO-key AI companion. `/app` opens the browser buddy; the previous bridge console remains at `/app/legacy`. Native Mac desktop integration is in development and is not advertised as available.
+
+- Four original SVG characters: Bruno, Pip, Byte and Miso.
+- OpenAI Responses and Anthropic Messages connections; server-side key validation and encrypted Supabase Vault storage.
+- Free: 20 requests per UTC day. Pro: no daily quota, A$10/month for new subscriptions. Provider charges, message size limits and a 30-request/minute abuse limit apply to both tiers.
+- Conversations live in tab memory. The backend sends recent messages to the chosen provider. No continuous screen capture.
+- Keys can be replaced or deleted. Secret deletion also occurs when the owner account is deleted. Raw keys are never returned by the API.
+- `/api/billing` resolves the new Stripe price by lookup key `thread_buddy_pro_monthly_aud`; existing subscriptions are preserved. Webhooks recognise both the previous configured price and the buddy price.
+- Premium codes use the existing single-use hashed redemption mechanism. Generate codes outside source control; never commit plaintext codes or keys.
+
+### React Bits attribution
+
+The landing page uses Magnet, TiltedCard, RotatingText and AnimatedContent from [React Bits](https://reactbits.dev/). Vendored source and its MIT + Commons Clause license are in `web/src/reactbits/`. These components enhance the Thread product; they are not sold as a component library.
+
+### Backend rollout
+
+Apply `20261107082716_buddy_companion.sql`, deploy `thread-buddy` with `_shared/common.ts`, then deploy the frontend/API. Vault must already be enabled. Provider/usage RPCs are executable only by service role; the Edge Function validates the caller through Supabase Auth before invoking them. Never expose the service-role key or grant clients access to Vault.

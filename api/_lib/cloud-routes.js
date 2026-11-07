@@ -1,5 +1,5 @@
 const tables=new Set(['agent_tasks','agent_connections','agent_subscriptions','agent_preferences','agent_premium_grants']);
-const functions=new Set(['thread-auth','thread-connect','thread-redeem']);
+const functions=new Set(['thread-auth','thread-connect','thread-redeem','thread-buddy']);
 export function allowedCloudRoute(path,method,query){
  if(typeof path!=='string'||path.includes('..')||path.includes('%')||path.includes('\\'))return false;
  const parts=path.split('/');
