@@ -1,4 +1,4 @@
-THREAD BETA 0.6.0 — Apple silicon, macOS 14+
+THREAD BETA 0.7.0 — Apple silicon, macOS 14+
 
 Drag Thread Beta.app into Applications, then open it there.
 
@@ -10,20 +10,24 @@ Do not disable Gatekeeper or run security-removal commands.
 If macOS reports malware or corruption, stop and contact support.
 
 Click the floating pet or press Option-Command-Space to talk.
-Closing the conversation window keeps the pet running.
+Closing Settings keeps the pet running. Click the pet to open its voice bubble.
 Use the menu bar paw icon to pause following, hide the pet or quit.
 
 Sign in or create your account with email.
-In Connections, choose My Codex subscription to use the official
+Follow the six-step setup. In Connection, choose My Codex subscription to use the official
 Codex CLI signed into ChatGPT, or connect an OpenAI/Anthropic key.
 Your Codex plan limits or provider API charges apply. API keys are
 encrypted in Supabase Vault; Codex credentials stay with Codex.
 
-Dictation requests microphone and speech permission when started.
-On-device recognition requires a supported language. Screen OCR
-runs only when you choose Share context; review text before sending.
-Window movement and text insertion require Accessibility permission
-and approval for EACH action. Some apps do not support these actions.
+Start the microphone in the pet bubble. Pause to send your turn;
+your buddy replies out loud, then listens again. Tap stop to finish.
+On-device recognition requires a supported language. Optional Apple
+speech-service fallback is off by default. Voice needs microphone
+and speech permission. Share screen captures one previewed JPEG
+for your next question only, with Screen Recording permission.
+Arrows/highlights guide you. Click, scroll, window and text changes
+require individual approval and Accessibility. Screen actions require
+a recent screenshot and unchanged target. Some apps limit actions.
 
 Free: 20 requests per UTC day. Pro: A$10/month, no daily Thread quota.
 Provider charges, size limits and anti-abuse rate limits still apply.

@@ -9,8 +9,8 @@ export default async function handler(req,res){
   const headers={apikey:publicKey};for(const name of['authorization','content-type','accept','prefer','range','range-unit'])if(req.headers[name])headers[name]=req.headers[name];
   // Ignore the browser client's placeholder key; never use an administrative key here.
   if(headers.authorization==='Bearer thread-browser-client')delete headers.authorization;
-  const init={method:req.method,headers,redirect:'error',signal:AbortSignal.timeout(20000)};
-  if(!['GET','HEAD'].includes(req.method)){const body=typeof req.body==='string'?req.body:JSON.stringify(req.body||{});if(Buffer.byteLength(body)>64000)return res.status(413).json({message:'Request too large.'});init.body=body;}
+  const init={method:req.method,headers,redirect:'error',signal:AbortSignal.timeout(path==='functions/v1/thread-buddy'?55000:20000)};
+  if(!['GET','HEAD'].includes(req.method)){const body=typeof req.body==='string'?req.body:JSON.stringify(req.body||{});if(Buffer.byteLength(body)>(path==='functions/v1/thread-buddy'?2000000:64000))return res.status(413).json({message:'Request too large.'});init.body=body;}
   const target=new URL(path,backendURL.replace(/\/$/,'')+'/');target.search=incoming.searchParams.toString();const upstream=await fetch(target,init);
   for(const name of['content-type','content-range','range-unit','retry-after'])if(upstream.headers.has(name))res.setHeader(name,upstream.headers.get(name));
   res.statusCode=upstream.status;res.end(req.method==='HEAD'?undefined:Buffer.from(await upstream.arrayBuffer()));

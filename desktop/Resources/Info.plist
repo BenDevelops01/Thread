@@ -15,9 +15,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.0</string>
+	<string>0.7.0</string>
 	<key>CFBundleVersion</key>
-	<string>6</string>
+	<string>7</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSUIElement</key>
@@ -25,10 +25,10 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Thread uses your microphone only when you start dictation. You review the text before sending it.</string>
+	<string>Thread listens only after you start a voice conversation. Pause to send a turn; stop the conversation to turn the microphone off.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Thread transcribes your voice into a draft using Apple’s on-device recognition when supported.</string>
+	<string>Thread transcribes your spoken turns with Apple on-device speech when supported. Optional Apple network speech fallback is off by default.</string>
 </dict>
 </plist>

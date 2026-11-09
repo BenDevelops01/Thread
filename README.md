@@ -2,7 +2,7 @@
 
 A friendly AI companion with four selectable buddies. Use your signed-in official Codex CLI on Mac, or bring an OpenAI or Anthropic API key, then explain confusing text, rewrite a thought or brainstorm your next step. Keys are encrypted in Supabase Vault. Free includes 20 requests per UTC day; Pro is A$10/month with no daily Thread quota. Provider API usage is billed separately.
 
-Download the native Apple-silicon **Mac beta** at `/mac`. It includes a separate floating pet, conversation window, on-device dictation where supported, on-demand text context and approval-based window/text actions. Closing the conversation keeps the pet running. This build is ad-hoc signed and **not notarized**; the download page explains installation and limitations. Email sign-in only. A browser companion remains at `/app`.
+Download the native Apple-silicon **Mac beta** at `/mac`. It includes a separate floating pet, six-step onboarding, a floating voice bubble, on-device speech where supported, explicit screenshot analysis and approval-based screen/window/text actions. Closing Settings keeps the pet running. This build is ad-hoc signed and **not notarized**; the download page explains installation and limitations. Email sign-in only. A browser companion remains at `/app`.
 
 Native source and build instructions: [`desktop/README.md`](desktop/README.md).
 
@@ -84,7 +84,7 @@ Thread is now a BYO-key AI companion. `/app` opens the browser buddy; the previo
 - Four original SVG characters: Bruno, Pip, Byte and Miso.
 - OpenAI Responses and Anthropic Messages connections; server-side key validation and encrypted Supabase Vault storage.
 - Free: 20 requests per UTC day. Pro: no daily quota, A$10/month for new subscriptions. Provider charges, message size limits and a 30-request/minute abuse limit apply to both tiers.
-- Browser conversations live in tab memory; native conversations and login tokens live in process memory. The native app shares selected text or one-shot OCR only on request. No continuous screen capture.
+- Browser conversations live in tab memory; native conversations and login tokens live in process memory. The native app shares a previewed one-shot JPEG only for the next submitted question, including with the local official Codex CLI. No continuous screen capture. Voice is active only after starting a conversation; Apple speech-service fallback is optional and off by default.
 - Keys can be replaced or deleted. Secret deletion also occurs when the owner account is deleted. Raw keys are never returned by the API.
 - `/api/billing` resolves the new Stripe price by lookup key `thread_buddy_pro_monthly_aud`; existing subscriptions are preserved. Webhooks recognise both the previous configured price and the buddy price.
 - Premium codes use the existing single-use hashed redemption mechanism. Generate codes outside source control; never commit plaintext codes or keys.

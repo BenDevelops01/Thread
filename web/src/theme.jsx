@@ -3,7 +3,7 @@ import { Moon, Sun } from 'lucide-react';
 const Theme = createContext(null);
 const valid = value => ['light', 'dark', 'system'].includes(value);
 export function ThemeProvider({ children }) {
-  const [theme, update] = useState(() => { try { const saved = localStorage.getItem('thread-theme'); return valid(saved) ? saved : 'system'; } catch { return 'system'; } });
+  const [theme, update] = useState(() => { try { const saved = localStorage.getItem('thread-theme'); return valid(saved) ? saved : 'light'; } catch { return 'light'; } });
   const [systemDark, setSystemDark] = useState(() => matchMedia('(prefers-color-scheme: dark)').matches);
   const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
   function setTheme(value) { if (valid(value)) { update(value); try { localStorage.setItem('thread-theme', value); } catch {} } }

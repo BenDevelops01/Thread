@@ -2,7 +2,6 @@ import AppKit
 import SwiftUI
 import Speech
 import AVFoundation
-import Vision
 import ApplicationServices
 
 @MainActor final class Dictation:NSObject,ObservableObject {
@@ -13,26 +12,36 @@ import ApplicationServices
  private var request:SFSpeechAudioBufferRecognitionRequest?
  private var installed=false
  var onText:(String)->Void={_ in}
+ var onFinal:(String)->Void={_ in}
+ var silence:DispatchWorkItem?
+ var latest=""
+ var generation=0
+ var onEnded:(String)->Void={_ in}
+ var autoSubmit=false
+ var allowAppleService=false
  func toggle(){if recording{stop();return};Task{await start()}}
  func start() async {
-  error=""
+  stop();let startGeneration=generation;error=""
   let speech=await withCheckedContinuation{c in SFSpeechRecognizer.requestAuthorization{c.resume(returning:$0)}}
+  guard generation==startGeneration else{return}
   guard speech == .authorized else{error="Enable Speech Recognition for Thread in System Settings → Privacy & Security.";return}
   let microphone=await AVCaptureDevice.requestAccess(for:.audio)
+  guard generation==startGeneration else{return}
   guard microphone else{error="Enable Microphone access for Thread in System Settings → Privacy & Security.";return}
-  guard let recognizer=SFSpeechRecognizer(locale:Locale.current),recognizer.isAvailable,recognizer.supportsOnDeviceRecognition else{error="On-device dictation isn’t available for this language. Enable/download your language in macOS Dictation settings, or type your message.";return}
-  stop();let req=SFSpeechAudioBufferRecognitionRequest();req.shouldReportPartialResults=true;req.requiresOnDeviceRecognition=true;request=req
+  guard let recognizer=SFSpeechRecognizer(locale:Locale.current),recognizer.isAvailable else{error="Apple speech recognition is unavailable. Check your Dictation language in System Settings.";return}
+  guard recognizer.supportsOnDeviceRecognition||allowAppleService else{error="On-device speech is unavailable for this language. Enable Apple speech-service fallback in Permissions, or use the typed pet prompt.";return}
+  latest="";let req=SFSpeechAudioBufferRecognitionRequest();req.shouldReportPartialResults=true;req.requiresOnDeviceRecognition=recognizer.supportsOnDeviceRecognition;request=req
   let input=engine.inputNode;let format=input.outputFormat(forBus:0)
   guard format.sampleRate>0,format.channelCount>0 else{error="No microphone input is available.";return}
   input.installTap(onBus:0,bufferSize:1024,format:format){buffer,_ in req.append(buffer)};installed=true
   do{engine.prepare();try engine.start();recording=true;task=recognizer.recognitionTask(with:req){[weak self] result,e in Task{@MainActor in
    guard self?.request === req else{return}
-   if let result{self?.onText(result.bestTranscription.formattedString);if result.isFinal{self?.stop()}}
-   if let e{self?.error=e.localizedDescription;self?.stop()}
-  }};Task{try? await Task.sleep(for:.seconds(55));if self.request === req{self.stop()}}
+   if let result,let self{let text=result.bestTranscription.formattedString;self.latest=text;self.onText(text);self.silence?.cancel();if self.autoSubmit,!text.isEmpty{let work=DispatchWorkItem{Task{@MainActor in guard self.recording else{return};let final=self.latest;self.stop();self.onFinal(final)}};self.silence=work;DispatchQueue.main.asyncAfter(deadline:.now()+1.5,execute:work)};if result.isFinal{let final=self.latest;self.stop();if self.autoSubmit{self.onFinal(final)}}}
+   if let e,let self{self.error=e.localizedDescription;self.stop();self.onEnded(self.error)}
+  }};Task{try? await Task.sleep(for:.seconds(55));if self.request === req{self.stop();self.onEnded("Voice paused after 55 seconds. Tap the microphone to continue.")}}
   }catch{self.error=error.localizedDescription;stop()}
  }
- func stop(){if engine.isRunning{engine.stop()};if installed{engine.inputNode.removeTap(onBus:0);installed=false};request?.endAudio();task?.cancel();request=nil;task=nil;recording=false}
+ func stop(){generation+=1;silence?.cancel();silence=nil;if engine.isRunning{engine.stop()};if installed{engine.inputNode.removeTap(onBus:0);installed=false};request?.endAudio();task?.cancel();request=nil;task=nil;recording=false}
 }
 @MainActor final class DesktopTools {
  static var trusted:Bool{AXIsProcessTrusted()}
@@ -48,11 +57,21 @@ import ApplicationServices
   guard AXUIElementCopyAttributeValue(ax,kAXFocusedWindowAttribute as CFString,&value) == .success,let value,CFGetTypeID(value)==AXUIElementGetTypeID() else{throw APIError(message:"This app doesn’t expose a movable window. Select a normal window and try again.")}
   return unsafeBitCast(value,to:AXUIElement.self)
  }
- static func execute(_ action:DesktopAction,target:NSRunningApplication?) throws {
+ static func execute(_ action:DesktopAction,target:NSRunningApplication?,snapshot:ScreenSnapshot?=nil) throws {
   _ = try action.validated()
   if action.type=="open_url",let value=action.url,let u=URL(string:value){NSWorkspace.shared.open(u);return}
+  if ["highlight","arrow"].contains(action.type){guard let snapshot else{throw APIError(message:"No screenshot to annotate.")};ScreenOverlay.shared.show([action],snapshot:snapshot);return}
   guard trusted else{throw APIError(message:"Enable Thread in System Settings → Privacy & Security → Accessibility, then approve the action again.")}
   guard let target,!target.isTerminated,target.processIdentifier != ProcessInfo.processInfo.processIdentifier else{throw APIError(message:"Switch to the app you want to change, then return to Thread.")}
+  if ["click","scroll"].contains(action.type){
+   guard let snapshot,let x=action.x,let y=action.y else{throw APIError(message:"Share your screen first.")};try ScreenContext.ensureFresh(snapshot,target:target)
+   let point=snapshot.point(x:x,y:y)
+   var hit:AXUIElement?;if AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(),Float(point.x),Float(point.y),&hit) == .success,let hit{var hitPID:pid_t=0;guard AXUIElementGetPid(hit,&hitPID) == .success,hitPID==target.processIdentifier else{throw APIError(message:"That point belongs to a different app. Focus it and share a fresh screenshot first.")};var role:CFTypeRef?;AXUIElementCopyAttributeValue(hit,kAXSubroleAttribute as CFString,&role);if role as? String=="AXSecureTextField"{throw APIError(message:"Thread won’t interact with password fields.")}}else{throw APIError(message:"The target element could not be verified. Click it yourself or share a fresh screenshot.")}
+   guard let source=CGEventSource(stateID:.hidSystemState) else{throw APIError(message:"Unable to create a macOS input event.")}
+   if action.type=="click"{CGEvent(mouseEventSource:source,mouseType:.leftMouseDown,mouseCursorPosition:point,mouseButton:.left)?.post(tap:.cghidEventTap);CGEvent(mouseEventSource:source,mouseType:.leftMouseUp,mouseCursorPosition:point,mouseButton:.left)?.post(tap:.cghidEventTap)}
+   else{guard let event=CGEvent(scrollWheelEvent2Source:source,units:.line,wheelCount:1,wheel1:Int32(action.amount ?? 0),wheel2:0,wheel3:0) else{throw APIError(message:"Unable to scroll.")};event.location=point;event.post(tap:.cghidEventTap)}
+   return
+  }
   if action.type=="move_window" {
    let window=try focusedWindow(target);let visible=NSScreen.main?.visibleFrame ?? CGRect(x:0,y:0,width:1280,height:800)
    var frame=visible
@@ -76,10 +95,5 @@ import ApplicationServices
   let el=unsafeBitCast(focused,to:AXUIElement.self);var role:CFTypeRef?;AXUIElementCopyAttributeValue(el,kAXSubroleAttribute as CFString,&role)
   guard (role as? String) != "AXSecureTextField" else{throw APIError(message:"Password fields are never read.")}
   var selected:CFTypeRef?;guard AXUIElementCopyAttributeValue(el,kAXSelectedTextAttribute as CFString,&selected) == .success,let text=selected as? String,!text.isEmpty else{throw APIError(message:"Highlight some text in the other app first.")};return String(text.prefix(5000))
- }
- static func screenText() async throws -> String {
-  guard CGPreflightScreenCaptureAccess() else{CGRequestScreenCaptureAccess();throw APIError(message:"Enable Screen Recording for Thread in System Settings, then try again. Nothing was captured.")}
-  guard let display=NSScreen.main?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,let image=CGDisplayCreateImage(display) else{throw APIError(message:"Unable to capture this display.")}
-  return try await Task.detached(priority:.userInitiated){let r=VNRecognizeTextRequest();r.recognitionLevel = .accurate;try VNImageRequestHandler(cgImage:image).perform([r]);return String((r.results ?? []).compactMap{$0.topCandidates(1).first?.string}.joined(separator:"\n").prefix(5000))}.value
  }
 }
