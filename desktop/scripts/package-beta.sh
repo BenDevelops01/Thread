@@ -21,12 +21,12 @@ trap 'rm -rf "$stage_dir"' EXIT
 ditto --noextattr --norsrc "$app_dir" "$stage_dir/Thread Beta.app"
 ln -s /Applications "$stage_dir/Applications"
 cp desktop/Resources/START-HERE.txt "$stage_dir/START HERE.txt"
-hdiutil create -volname "Thread Beta" -srcfolder "$stage_dir" -ov -format UDZO "$repo_dir/web/public/downloads/Thread-Beta-0.7.0-arm64.dmg"
+hdiutil create -volname "Thread Beta" -srcfolder "$stage_dir" -ov -format UDZO "$repo_dir/web/public/downloads/Thread-Beta-0.7.1-arm64.dmg"
 python3 - <<'PY'
 from pathlib import Path
 import json,hashlib
-p=Path('web/public/downloads/Thread-Beta-0.7.0-arm64.dmg')
-d={'version':'0.7.0','filename':p.name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'architecture':'arm64','minimumMacOS':'14.0','notarized':False,'channel':'beta'}
+p=Path('web/public/downloads/Thread-Beta-0.7.1-arm64.dmg')
+d={'version':'0.7.1','filename':p.name,'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'architecture':'arm64','minimumMacOS':'14.0','notarized':False,'channel':'beta'}
 Path('web/public/downloads/release.json').write_text(json.dumps(d,indent=2)+'\n')
 print(json.dumps(d))
 PY

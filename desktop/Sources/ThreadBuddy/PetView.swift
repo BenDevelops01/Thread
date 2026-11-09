@@ -20,5 +20,5 @@ struct PetArtwork:View {
 }
 struct PetView:View {
  @ObservedObject var model:BuddyModel
- var body:some View{VStack(spacing:0){if model.busy||model.listening{Text(model.listening ? "listening…":"thinking…").font(.system(size:10,weight:.medium,design:.monospaced)).padding(.horizontal,10).padding(.vertical,5).background(.ultraThinMaterial,in:Capsule())}else{Color.clear.frame(height:24)};PetArtwork(kind:model.buddyID,color:model.buddy.color,pose:model.listening ? "listening":model.speaking ? "speaking":"idle")}.frame(width:200,height:235).background(.clear)}
+ var body:some View{VStack(spacing:0){if model.busy||model.listening{Text(model.listening ? "listening…":"thinking…").font(.system(size:10,weight:.medium,design:.monospaced)).padding(.horizontal,10).padding(.vertical,5).background(.ultraThinMaterial,in:Capsule())}else{Color.clear.frame(height:24)};PetArtwork(kind:model.buddyID,color:model.buddy.color,pose:model.listening ? "listening":model.speaking ? "speaking":"idle")}.frame(width:200,height:235).background(.clear).accessibilityElement(children:.ignore).accessibilityLabel("Talk to \(model.buddy.name)").accessibilityAddTraits(.isButton).accessibilityAction{model.showBubble();if model.setupComplete,model.signedIn{model.startVoice()}}}
 }

@@ -1,4 +1,4 @@
-THREAD BETA 0.7.0 — Apple silicon, macOS 14+
+THREAD BETA 0.7.1 — Apple silicon, macOS 14+
 
 Drag Thread Beta.app into Applications, then open it there.
 
@@ -31,6 +31,7 @@ a recent screenshot and unchanged target. Some apps limit actions.
 
 Free: 20 requests per UTC day. Pro: A$10/month, no daily Thread quota.
 Provider charges, size limits and anti-abuse rate limits still apply.
-Sessions live in memory until you quit. No automatic updates yet.
+Remember this Mac keeps your login across relaunches. Sign out to
+remove it. Conversations are in memory. No automatic updates yet.
 
 Support, source, download checksum and privacy: https://trythread.xyz/mac

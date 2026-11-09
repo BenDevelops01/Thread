@@ -19,7 +19,7 @@ Public download: `/mac`. Only an Apple-silicon build is provided. Minimum macOS 
 ## What works
 
 - Six original pixel-art animated native pets, draggable positioning, optional active-window following, menu bar controls and background lifecycle.
-- Email/password account auth through the existing rate-limited Supabase endpoint. Refresh tokens stay in process memory; provider API keys remain encrypted in Supabase Vault.
+- Email/password account auth through the existing rate-limited Supabase endpoint. Remember this Mac saves an AES-GCM encrypted session in Application Support, in a user-only directory with 0600 files; the device key remains on this Mac. No Keychain is used. A compromise of the local user account can access the device key. Sign-out revokes the current session and removes local session/key files. Provider API keys remain encrypted in Supabase Vault.
 - Codex subscription connection through the installed official CLI using its own ChatGPT login. No Codex token files are read or copied. Each turn uses an ephemeral isolated directory, read-only sandbox, ignored user config, and disabled shell/unified execution tools. Responses are parsed from JSONL events. Generated desktop action plans still need individual native approval. Codex plan limits apply.
 - Six-step onboarding: buddy, email account, validated Codex or encrypted API key connection, optional permissions and a real response test. Separate Settings and floating voice bubble.
 - Voice turns: tap the pet/microphone, pause to send, hear native speech synthesis, then continue listening. On-device Apple recognition is the default; optional Apple speech-service fallback is off. Each listening turn stops after 55 seconds.
@@ -37,11 +37,11 @@ Email/password sign-in is supported. Social sign-in has been removed.
 
 ## Beta limitations
 
-No notarization, Intel build, automatic update service or persistence of login/conversation across app quits. On-device dictation depends on language support. Some apps disallow window resizing or safe text insertion. Vision is a single explicitly shared screenshot, not continuous monitoring. Agent planning can be wrong: each suggested action is reviewable and validated before execution. This is not a general autonomous computer-use agent.
+No notarization, Intel build, automatic update service or persistence of conversations across app quits. Remember this Mac preserves the login until sign-out or server revocation. On-device dictation depends on language support. Some apps disallow window resizing or safe text insertion. Vision is a single explicitly shared screenshot, not continuous monitoring. Agent planning can be wrong: each suggested action is reviewable and validated before execution. This is not a general autonomous computer-use agent.
 
 ## Optional live flow check
 
-`Tests/NativeFlowCheck.swift` exercises the actual native model: email sign-in, authenticated request reservation, Codex subscription inference and validated action planning. It never approves the generated action. Compile it with `Model.swift`, `CodexSubscription.swift`, `DesktopServices.swift` and `ScreenContext.swift`, then provide `THREAD_TEST_EMAIL` and `THREAD_TEST_PASSWORD` for a disposable test account via the environment. It uses two requests from that account and the locally signed-in Codex allowance. Do not embed credentials in source.
+`Tests/NativeFlowCheck.swift` exercises the actual native model: email sign-in, authenticated request reservation, Codex subscription inference and validated action planning. It never approves the generated action. Compile it with `Model.swift`, `CodexSubscription.swift`, `DesktopServices.swift`, `ScreenContext.swift` and `SessionStore.swift`, then provide `THREAD_TEST_EMAIL` and `THREAD_TEST_PASSWORD` for a disposable test account via the environment. It uses two requests from that account and the locally signed-in Codex allowance. Do not embed credentials in source.
 
 ## 0.7.0 verification
 
@@ -50,3 +50,7 @@ Release build and ad-hoc signature verified on this Mac. Native action validatio
 `Tests/VisionFlowCheck.swift` creates a synthetic screenshot, sends it through the signed-in official Codex CLI, checks the exact heading and validates a highlight. It consumes one Codex turn and does not capture the user’s screen or execute desktop actions.
 
 `Tests/SessionFlowCheck.swift` signs into a disposable account twice, forces an access-token refresh and verifies that local sign-out preserves the other session. Both sessions are then signed out. The live check passed against the deployed auth endpoint.
+
+### 0.7.1 remembered sign-in
+
+`RememberMacCheck.swift` passed a real disposable-account sign-in → encrypted storage → restored native model → expired-token refresh → persisted renewal → sign-out cleanup flow, using an isolated temporary directory. The sprite generator no longer draws a highlight outside the head mask.
