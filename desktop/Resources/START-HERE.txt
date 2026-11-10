@@ -1,4 +1,4 @@
-THREAD BETA 0.7.1 — Apple silicon, macOS 14+
+THREAD BETA 0.8.0 — Apple silicon, macOS 14+
 
 Drag Thread Beta.app into Applications, then open it there.
 
@@ -14,7 +14,7 @@ Closing Settings keeps the pet running. Click the pet to open its voice bubble.
 Use the menu bar paw icon to pause following, hide the pet or quit.
 
 Sign in or create your account with email.
-Follow the six-step setup. In Connection, choose My Codex subscription to use the official
+Follow the seven-step setup. In Connection, choose My Codex subscription to use the official
 Codex CLI signed into ChatGPT, or connect an OpenAI/Anthropic key.
 Your Codex plan limits or provider API charges apply. API keys are
 encrypted in Supabase Vault; Codex credentials stay with Codex.
@@ -35,3 +35,8 @@ Remember this Mac keeps your login across relaunches. Sign out to
 remove it. Conversations are in memory. No automatic updates yet.
 
 Support, source, download checksum and privacy: https://trythread.xyz/mac
+
+Replying voices use local neural synthesis. Open Settings > Voice
+to choose a voice and preview it. The first setup downloads an
+approximately 93 MB voice model; speech then runs on this Mac.
+No Apple reply voice or voice API key is used.

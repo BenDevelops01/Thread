@@ -21,8 +21,8 @@ Public download: `/mac`. Only an Apple-silicon build is provided. Minimum macOS 
 - Six original pixel-art animated native pets, draggable positioning, optional active-window following, menu bar controls and background lifecycle.
 - Email/password account auth through the existing rate-limited Supabase endpoint. Remember this Mac saves an AES-GCM encrypted session in Application Support, in a user-only directory with 0600 files; the device key remains on this Mac. No Keychain is used. A compromise of the local user account can access the device key. Sign-out revokes the current session and removes local session/key files. Provider API keys remain encrypted in Supabase Vault.
 - Codex subscription connection through the installed official CLI using its own ChatGPT login. No Codex token files are read or copied. Each turn uses an ephemeral isolated directory, read-only sandbox, ignored user config, and disabled shell/unified execution tools. Responses are parsed from JSONL events. Generated desktop action plans still need individual native approval. Codex plan limits apply.
-- Six-step onboarding: buddy, email account, validated Codex or encrypted API key connection, optional permissions and a real response test. Separate Settings and floating voice bubble.
-- Voice turns: tap the pet/microphone, pause to send, hear native speech synthesis, then continue listening. On-device Apple recognition is the default; optional Apple speech-service fallback is off. Each listening turn stops after 55 seconds.
+- Seven-step onboarding: buddy, email account, validated Codex or encrypted API key connection, local neural voice setup, optional permissions and a real response test. Separate Settings and floating voice bubble.
+- Voice turns: tap the pet/microphone, pause to send, hear local Kokoro neural speech, then continue listening. On-device Apple recognition is the default; optional Apple speech-service fallback is off. Each listening turn stops after 55 seconds.
 - Explicit one-shot ScreenCaptureKit image sharing with thumbnail preview. The next request sends the JPEG to the chosen model, including the official Codex CLI image input. No automatic next capture, image persistence or continuous recording. Non-interactive arrows/highlights guide the user.
 - Action planning through the chosen BYO provider, followed by a separate approval for each supported action: resize/reposition the remembered target app’s window, open an HTTPS link, insert text into a supported selected text field. Clicks and scrolling require a recent screenshot, unchanged target/window geometry, Accessibility and individual approval. Password subroles are rejected. No shell execution or automatic form submission.
 - Stripe Checkout/portal and complimentary code redemption using the same account and entitlements as the website.
@@ -54,3 +54,15 @@ Release build and ad-hoc signature verified on this Mac. Native action validatio
 ### 0.7.1 remembered sign-in
 
 `RememberMacCheck.swift` passed a real disposable-account sign-in → encrypted storage → restored native model → expired-token refresh → persisted renewal → sign-out cleanup flow, using an isolated temporary directory. The sprite generator no longer draws a highlight outside the head mask.
+
+### 0.8.0 voice and composer
+
+The floating bubble includes a multiline composer, screen attachment preview, send shortcut, voice start/stop, mute, copy and replay controls. Voice settings persist the chosen neural voice, pace and spoken-reply preferences. Speech strips markdown, links and code fences before local neural synthesis.
+
+## Local neural speech
+
+Replies use Kokoro neural synthesis in an isolated bundled Node/ONNX process over private stdio. Apple speech synthesis is not used. Six voice embeddings are bundled; the approximately 93 MB model pack downloads once from a pinned revision and every file is checked against SHA-256. Generation then works offline. Generated audio is private to the user account and removed after playback or the next engine start. Stop invalidates pending audio and queued playback. No separate Node/Python install or voice API key is required. Model text generation still uses your chosen Codex/API connection.
+
+Run `node desktop/voice/check.mjs "$HOME/Library/Application Support/Thread/NeuralVoice"` after voice setup for local inference, WAV output, queued cancellation and clean-shutdown checks. The runtime uses locked dependencies with the audited sharp and ONNX overrides. `desktop/scripts/prepare-voice-runtime.sh` builds the arm64 runtime; packaging signs its executable and native libraries. Original component licenses and corresponding-source links ship in the voice runtime.
+
+The 0.8.0 DMG is distributed through the public GitHub Release, linked from the website. Installers are not added to source history; the website keeps the release manifest and SHA-256.

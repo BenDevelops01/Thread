@@ -32,7 +32,14 @@ struct ActionPlan:Decodable {let reply:String;let actions:[DesktopAction]}
  static let site=URL(string:"https://trythread.xyz")!
  @Published var buddyID=UserDefaults.standard.string(forKey:"buddy") ?? "robot" {didSet{UserDefaults.standard.set(buddyID,forKey:"buddy")}}
  @Published var follow=true {didSet{UserDefaults.standard.set(follow,forKey:"follow")}}
- @Published var voiceReplies=true
+ @Published var voiceReplies=UserDefaults.standard.object(forKey:"voice-replies") as? Bool ?? true {didSet{UserDefaults.standard.set(voiceReplies,forKey:"voice-replies")}}
+ @Published var neuralVoiceID=UserDefaults.standard.string(forKey:"neural-voice") ?? "af_heart" {didSet{UserDefaults.standard.set(neuralVoiceID,forKey:"neural-voice")}}
+ @Published var voiceSpeed=UserDefaults.standard.object(forKey:"neural-speed") as? Double ?? 1.0 {didSet{UserDefaults.standard.set(voiceSpeed,forKey:"neural-speed")}}
+ @Published var neuralReady=false
+ @Published var neuralInstalling=false
+ @Published var neuralProgress=0
+ @Published var neuralStatus="Download your neural voice pack"
+ @Published var voiceRendering=false
  @Published var listening=false
  @Published var speaking=false
  @Published var handsFree=false
@@ -68,6 +75,8 @@ struct ActionPlan:Decodable {let reply:String;let actions:[DesktopAction]}
  var beforeAction:()->Void={}
  var afterAction:()->Void={}
  var startVoice:()->Void={}
+ var prepareNeuralVoice:()->Void={}
+ var cancelNeuralVoice:()->Void={}
  var buddy:Buddy{Buddy.all.first{$0.id==buddyID} ?? Buddy.all[0]}
  init(persistSession:Bool=true){super.init();persistenceEnabled=persistSession;let saved=UserDefaults.standard.string(forKey:"native-provider");provider=["codex","openai","anthropic"].contains(saved ?? "") ? saved!:(CodexSubscription.executable != nil ? "codex":"openai");model=UserDefaults.standard.string(forKey:"native-model") ?? (provider=="codex" ? "Codex default":provider=="anthropic" ? "claude-haiku-4-5":"gpt-4.1-mini");if UserDefaults.standard.object(forKey:"follow") != nil{follow=UserDefaults.standard.bool(forKey:"follow")};if persistSession,rememberMac{session=SessionStore.load();signedIn=session != nil}}
  func persistSignIn(){guard persistenceEnabled else{return};do{if rememberMac,let session{try SessionStore.save(session)}else{try SessionStore.clear()}}catch{notice="Your sign-in works, but this Mac could not save it. Check available disk space and try Remember this Mac again."}}

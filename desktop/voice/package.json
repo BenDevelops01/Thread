@@ -1,0 +1,13 @@
+{
+  "name": "thread-local-neural-voice",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "kokoro-js": "1.2.1"
+  },
+  "overrides": {
+    "sharp": "0.35.5",
+    "onnxruntime-node": "1.31.1"
+  }
+}

@@ -27,7 +27,7 @@ final class PetHostingView:NSHostingView<PetView>{
   let view=PetHostingView(rootView:PetView(model:model));view.onClick={[weak self] in self?.talk()};view.onDrag={[weak self] in self?.model.follow=false};pet.contentView=view
   let screen=NSScreen.main?.visibleFrame ?? NSRect(x:0,y:0,width:1280,height:800);pet.setFrameOrigin(NSPoint(x:screen.maxX-230,y:screen.minY+40));pet.orderFrontRegardless();aim=pet.frame.origin
   voice=VoiceController(model:model)
-  bubble=BubblePanel(contentRect:NSRect(x:0,y:0,width:370,height:300),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);bubble.isOpaque=false;bubble.backgroundColor = .clear;bubble.hasShadow=true;bubble.hidesOnDeactivate=false;bubble.level = .floating;bubble.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary];bubble.isReleasedWhenClosed=false
+  bubble=BubblePanel(contentRect:NSRect(x:0,y:0,width:410,height:300),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);bubble.isOpaque=false;bubble.backgroundColor = .clear;bubble.hasShadow=true;bubble.hidesOnDeactivate=false;bubble.level = .floating;bubble.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary];bubble.isReleasedWhenClosed=false
   bubbleHost=NSHostingView(rootView:PetBubble(model:model,voice:voice,close:{[weak self] in self?.bubble.orderOut(nil)}));bubble.contentView=bubbleHost
   model.closeConversation={[weak self] in self?.conversation.close()};model.showConversation={[weak self] in self?.show()};model.showBubble={[weak self] in self?.presentBubble()}
   model.beforeAction={[weak self] in self?.bubble.orderOut(nil);self?.pet.orderOut(nil)};model.afterAction={[weak self] in guard let self else{return};if self.petVisible{self.pet.orderFrontRegardless()};self.presentBubble();if self.voice.active,self.model.plan.isEmpty{self.voice.start()}}
@@ -41,7 +41,7 @@ final class PetHostingView:NSHostingView<PetView>{
   if !model.setupComplete || !model.signedIn{show()};if model.signedIn{Task{await model.refresh();if !model.signedIn{show()}}}
  }
  func rememberApp(_ app:NSRunningApplication?){guard let app,app.processIdentifier != ProcessInfo.processInfo.processIdentifier,app.activationPolicy == .regular else{return};model.targetApplication=app;model.targetName=app.localizedName ?? "your active app"}
- func positionBubble(){guard bubble.isVisible else{return};let screen=NSScreen.screens.first(where:{$0.frame.intersects(pet.frame)}) ?? NSScreen.main!;let area=screen.visibleFrame;let height=min(620,max(200,bubbleHost.fittingSize.height));bubble.setContentSize(NSSize(width:370,height:height));let x=min(max(pet.frame.midX-185,area.minX+12),area.maxX-382),y=min(max(pet.frame.maxY+8,area.minY+12),area.maxY-height-12);bubble.setFrameOrigin(NSPoint(x:x,y:y))}
+ func positionBubble(){guard bubble.isVisible else{return};let screen=NSScreen.screens.first(where:{$0.frame.intersects(pet.frame)}) ?? NSScreen.main!;let area=screen.visibleFrame;let height=min(620,max(200,bubbleHost.fittingSize.height));bubble.setContentSize(NSSize(width:410,height:height));let x=min(max(pet.frame.midX-205,area.minX+12),area.maxX-422),y=min(max(pet.frame.maxY+8,area.minY+12),area.maxY-height-12);bubble.setFrameOrigin(NSPoint(x:x,y:y))}
  func presentBubble(){bubble.makeKeyAndOrderFront(nil);positionBubble()}
  @objc func talk(){presentBubble();if model.setupComplete,model.signedIn{voice.toggle()}}
  @objc func stopVoice(){voice.stop()}
@@ -63,6 +63,6 @@ final class PetHostingView:NSHostingView<PetView>{
   let p=pet.frame.origin;let reduced=NSWorkspace.shared.accessibilityDisplayShouldReduceMotion;let next=reduced ? aim:NSPoint(x:p.x+(aim.x-p.x)*0.06,y:p.y+(aim.y-p.y)*0.06)
   if abs(next.x-p.x)>0.1||abs(next.y-p.y)>0.1{pet.setFrameOrigin(next)}
  }
- func applicationWillTerminate(_ notification:Notification){voice.stop();ScreenOverlay.shared.clear();timer?.invalidate();if let observer{NSWorkspace.shared.notificationCenter.removeObserver(observer)};if let hotKey{UnregisterEventHotKey(hotKey)}}
+ func applicationWillTerminate(_ notification:Notification){voice.shutdown();ScreenOverlay.shared.clear();timer?.invalidate();if let observer{NSWorkspace.shared.notificationCenter.removeObserver(observer)};if let hotKey{UnregisterEventHotKey(hotKey)}}
 }
 @main struct ThreadMain{static func main(){let app=NSApplication.shared;let delegate=AppDelegate();app.delegate=delegate;withExtendedLifetime(delegate){app.run()}}}

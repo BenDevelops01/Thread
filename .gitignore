@@ -13,3 +13,7 @@ supabase/.temp/
 coverage/
 
 .thread-data/
+
+desktop/voice/runtime/
+
+web/public/downloads/*.dmg

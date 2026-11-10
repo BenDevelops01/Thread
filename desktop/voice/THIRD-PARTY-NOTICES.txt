@@ -1,0 +1,23 @@
+Thread local neural speech runtime
+
+This distribution includes these independent open-source components:
+- Node.js 24.21.0: MIT and bundled notices in NODE-LICENSE.txt.
+  Source: https://github.com/nodejs/node/tree/v24.21.0
+- kokoro-js 1.2.1: Apache-2.0; see node_modules/kokoro-js/LICENSE.
+  Source: https://github.com/hexgrad/kokoro/tree/main/kokoro.js
+- Kokoro-82M voice model: Apache-2.0. Weights download separately from
+  the exact revision and SHA-256 values in pack.json.
+  Source: https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX
+- Transformers.js: Apache-2.0; original license files accompany its package.
+  Source: https://github.com/huggingface/transformers.js
+- ONNX Runtime: MIT; original license files accompany its package.
+  Source: https://github.com/microsoft/onnxruntime
+- phonemizer.js: Apache-2.0 wrapper with eSpeak NG's GPL-3.0 phonemizer.
+  Original license files accompany the package. Corresponding source:
+  https://github.com/xenova/phonemizer.js
+  https://github.com/espeak-ng/espeak-ng
+
+All dependencies, versions, integrity values and their own licenses remain
+in package-lock.json and node_modules. The native Swift application sends
+text to the separate local runtime over private standard input/output.
+No Apple speech synthesis is used for generated replies.

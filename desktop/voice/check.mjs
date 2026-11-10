@@ -1,0 +1,10 @@
+import fs from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import{spawn}from'node:child_process';import readline from 'node:readline';import assert from'node:assert/strict';
+const source=process.argv[2];if(!source)throw Error('Pass a prepared neural model directory, containing pack/');
+const root=await fs.mkdtemp(path.join(os.tmpdir(),'thread-neural-test-'));await fs.cp(path.join(source,'pack'),path.join(root,'pack'),{recursive:true});
+const child=spawn(process.execPath,[new URL('./engine.mjs',import.meta.url).pathname,root],{stdio:['pipe','pipe','pipe']});
+const id='55555555-5555-4555-8555-555555555555',cancelled='66666666-6666-4666-8666-666666666666';let count=0,done=false,stderr='';child.stderr.on('data',d=>stderr+=d);
+const send=x=>child.stdin.write(JSON.stringify(x)+'\n');
+const timeout=setTimeout(()=>child.kill('SIGKILL'),60000);
+readline.createInterface({input:child.stdout}).on('line',async line=>{let e;try{e=JSON.parse(line)}catch{return};if(e.type==='ready'){send({type:'speak',id,text:'Hey, I am Tuck. Let us figure it out together.',voice:'af_heart',speed:1});send({type:'speak',id:cancelled,text:'This queued speech must be cancelled.',voice:'af_bella',speed:1});send({type:'cancel',id:cancelled})}if(e.type==='audio'){assert.equal(e.id,id);const d=await fs.readFile(e.path);assert.equal(d.toString('ascii',0,4),'RIFF');assert(d.length>10000);count++}if(e.type==='done'&&e.id===id){done=true;send({type:'shutdown'})}if(e.type==='error')throw Error(e.message)});
+send({type:'load'});
+const code=await new Promise(resolve=>child.on('exit',resolve));clearTimeout(timeout);await fs.rm(root,{recursive:true,force:true});assert.equal(code,0,stderr);assert(done&&count>0);console.log('PASS: cached local neural inference, playable WAV output, queued cancellation, and clean shutdown. No cloud speech API.');
