@@ -1,0 +1,84 @@
+name: Publish Mac beta
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-mac.yml'
+      - 'desktop/**'
+permissions:
+  contents: read
+concurrency:
+  group: thread-mac-beta
+  cancel-in-progress: true
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the exact public source
+        shell: bash
+        run: |
+          git init .
+          git remote add origin https://github.com/BenDevelops01/Thread.git
+          git fetch --depth=1 origin "$GITHUB_SHA"
+          git checkout --detach FETCH_HEAD
+          test "$(uname -m)" = arm64
+      - name: Install pinned Node runtime
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          curl --fail --location --retry 3 https://nodejs.org/dist/v24.21.0/node-v24.21.0-darwin-arm64.tar.gz -o node-v24.21.0-darwin-arm64.tar.gz
+          curl --fail --location --retry 3 https://nodejs.org/dist/v24.21.0/SHASUMS256.txt -o node-shasums.txt
+          rg ' node-v24.21.0-darwin-arm64.tar.gz$' node-shasums.txt | shasum -a 256 -c -
+          tar -xzf node-v24.21.0-darwin-arm64.tar.gz
+          echo "$RUNNER_TEMP/node-v24.21.0-darwin-arm64/bin" >> "$GITHUB_PATH"
+      - name: Validate and package native beta
+        shell: bash
+        run: |
+          npm ci --prefix desktop/voice --ignore-scripts
+          npm audit --prefix desktop/voice --omit=dev --audit-level=high
+          desktop/scripts/test-actions.sh
+          desktop/scripts/prepare-voice-runtime.sh
+          desktop/scripts/package-beta.sh
+          app_bundle=$(cat .thread-data/native-bundle-path)
+          codesign --verify --deep --strict "$app_bundle"
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os
+          p=Path('web/public/downloads/release.json');r=json.loads(p.read_text())
+          file=Path('web/public/downloads')/r['filename']
+          assert file.stat().st_size<100_000_000
+          assert hashlib.sha256(file.read_bytes()).hexdigest()==r['sha256']
+          r['downloadURL']='https://github.com/BenDevelops01/Thread/releases/download/v'+r['version']+'/'+r['filename']
+          r['sourceCommit']=os.environ['GITHUB_SHA']
+          p.write_text(json.dumps(r,indent=2)+'\n')
+          PY
+      - name: Publish installer and matching checksum
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(python3 -c "import json;print(json.load(open('web/public/downloads/release.json'))['version'])")
+          filename=$(python3 -c "import json;print(json.load(open('web/public/downloads/release.json'))['filename'])")
+          gh release view "v$version" >/dev/null 2>&1 || gh release create "v$version" --target "$GITHUB_SHA" --prerelease --title "Thread Beta $version" --notes 'Apple-silicon Mac beta. Local neural voices. Not Apple notarized. Installation: https://trythread.xyz/mac'
+          gh release upload "v$version" "web/public/downloads/$filename" web/public/downloads/release.json --clobber
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,subprocess
+          r=json.loads(Path('web/public/downloads/release.json').read_text())
+          Path('/tmp/thread-release-notes.txt').write_text('Thread Beta '+r['version']+' for Apple silicon, macOS 14+.\n\nLocal Kokoro neural voices, remembered Mac sign-in and a floating multiline composer. The voice model downloads once (about 93 MB). No cloud speech API is used.\n\nAd-hoc signed, not Apple notarized. Install guide: https://trythread.xyz/mac\n\nSHA-256: '+r['sha256']+'\n')
+          subprocess.run(['gh','release','edit','v'+r['version'],'--notes-file','/tmp/thread-release-notes.txt'],check=True)
+          PY
+          file_sha=$(gh api "repos/$GH_REPO/contents/web/public/downloads/release.json" --jq .sha)
+          FILE_SHA="$file_sha" python3 - <<'PY'
+          from pathlib import Path
+          import base64,json,os
+          payload={'message':'Publish Mac beta release checksum','branch':'main','sha':os.environ['FILE_SHA'],'content':base64.b64encode(Path('web/public/downloads/release.json').read_bytes()).decode()}
+          Path('/tmp/thread-manifest-update.json').write_text(json.dumps(payload))
+          PY
+          gh api --method PUT "repos/$GH_REPO/contents/web/public/downloads/release.json" --input /tmp/thread-manifest-update.json --jq .commit.sha
