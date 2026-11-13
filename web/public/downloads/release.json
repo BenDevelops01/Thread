@@ -1,11 +1,12 @@
 {
   "version": "0.8.0",
   "filename": "Thread-Beta-0.8.0-arm64.dmg",
-  "bytes": 96582637,
-  "sha256": "a8c303df01ea363579af2d928bb72d284af748738731b82194b5d348f4e4eba4",
+  "bytes": 94223451,
+  "sha256": "2140f68e53e544e8be37b3dea7124d6b4e8587a040dfae78151d7b240b529883",
   "architecture": "arm64",
   "minimumMacOS": "14.0",
   "notarized": false,
   "channel": "beta",
-  "downloadURL": "https://github.com/BenDevelops01/Thread/releases/download/v0.8.0/Thread-Beta-0.8.0-arm64.dmg"
+  "downloadURL": "https://github.com/BenDevelops01/Thread/releases/download/v0.8.0/Thread-Beta-0.8.0-arm64.dmg",
+  "sourceCommit": "d111d7b32a11bf0e2582db1bec2883f0e65de5a6"
 }
