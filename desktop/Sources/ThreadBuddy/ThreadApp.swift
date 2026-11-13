@@ -23,13 +23,13 @@ final class PetHostingView:NSHostingView<PetView>{
   let fileItem=NSMenuItem();let fileMenu=NSMenu(title:"File");fileMenu.addItem(withTitle:"Close Window",action:#selector(NSWindow.performClose(_:)),keyEquivalent:"w");fileItem.submenu=fileMenu;mainMenu.addItem(fileItem)
   let editItem=NSMenuItem();let edit=NSMenu(title:"Edit");for (title,action,key) in [("Undo","undo:","z"),("Cut","cut:","x"),("Copy","copy:","c"),("Paste","paste:","v"),("Select All","selectAll:","a")]{edit.addItem(withTitle:title,action:Selector(action),keyEquivalent:key)};editItem.submenu=edit;mainMenu.addItem(editItem);NSApp.mainMenu=mainMenu
   conversation=NSWindow(contentRect:NSRect(x:0,y:0,width:950,height:740),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false);conversation.title="Thread — Setup & Settings";conversation.minSize=NSSize(width:840,height:650);conversation.isReleasedWhenClosed=false;conversation.delegate=self;conversation.contentView=NSHostingView(rootView:ConversationView(model:model));conversation.center()
-  pet=PetPanel(contentRect:NSRect(x:0,y:0,width:200,height:245),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);pet.backgroundColor = .clear;pet.isOpaque=false;pet.hasShadow=false;pet.level = .floating;pet.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary,.ignoresCycle];pet.hidesOnDeactivate=false;pet.isReleasedWhenClosed=false
-  let view=PetHostingView(rootView:PetView(model:model));view.onClick={[weak self] in self?.talk()};view.onDrag={[weak self] in self?.model.follow=false};pet.contentView=view
-  let screen=NSScreen.main?.visibleFrame ?? NSRect(x:0,y:0,width:1280,height:800);pet.setFrameOrigin(NSPoint(x:screen.maxX-230,y:screen.minY+40));pet.orderFrontRegardless();aim=pet.frame.origin
   voice=VoiceController(model:model)
-  bubble=BubblePanel(contentRect:NSRect(x:0,y:0,width:410,height:300),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);bubble.isOpaque=false;bubble.backgroundColor = .clear;bubble.hasShadow=true;bubble.hidesOnDeactivate=false;bubble.level = .floating;bubble.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary];bubble.isReleasedWhenClosed=false
+  pet=PetPanel(contentRect:NSRect(x:0,y:0,width:200,height:290),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);pet.title="Thread — Desktop buddy";pet.backgroundColor = .clear;pet.isOpaque=false;pet.hasShadow=false;pet.level = .floating;pet.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary,.ignoresCycle];pet.hidesOnDeactivate=false;pet.isReleasedWhenClosed=false
+  let view=PetHostingView(rootView:PetView(model:model));view.onClick={[weak self] in self?.typeToBuddy()};view.onDrag={[weak self] in self?.model.follow=false};let petContainer=NSView(frame:NSRect(x:0,y:0,width:200,height:290));view.frame=NSRect(x:0,y:50,width:200,height:235);petContainer.addSubview(view);let controls=NSHostingView(rootView:PetControlStrip(model:model,voice:voice,onVoice:{[weak self] in self?.talk()},onText:{[weak self] in self?.typeToBuddy()}));controls.frame=NSRect(x:44,y:0,width:112,height:48);petContainer.addSubview(controls);pet.contentView=petContainer
+  let screen=NSScreen.main?.visibleFrame ?? NSRect(x:0,y:0,width:1280,height:800);pet.setFrameOrigin(NSPoint(x:screen.maxX-230,y:screen.minY+40));pet.orderFrontRegardless();aim=pet.frame.origin
+  bubble=BubblePanel(contentRect:NSRect(x:0,y:0,width:422,height:300),styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);bubble.title="Thread — Conversation";bubble.isOpaque=false;bubble.backgroundColor = .clear;bubble.hasShadow=true;bubble.hidesOnDeactivate=false;bubble.level = .floating;bubble.collectionBehavior=[.canJoinAllSpaces,.fullScreenAuxiliary];bubble.isReleasedWhenClosed=false
   bubbleHost=NSHostingView(rootView:PetBubble(model:model,voice:voice,close:{[weak self] in self?.bubble.orderOut(nil)}));bubble.contentView=bubbleHost
-  model.closeConversation={[weak self] in self?.conversation.close()};model.showConversation={[weak self] in self?.show()};model.showBubble={[weak self] in self?.presentBubble()}
+  model.closeConversation={[weak self] in self?.conversation.close()};model.showConversation={[weak self] in self?.show()};model.showBubble={[weak self] in self?.typeToBuddy()}
   model.beforeAction={[weak self] in self?.bubble.orderOut(nil);self?.pet.orderOut(nil)};model.afterAction={[weak self] in guard let self else{return};if self.petVisible{self.pet.orderFrontRegardless()};self.presentBubble();if self.voice.active,self.model.plan.isEmpty{self.voice.start()}}
   model.applyAppearance()
   rememberApp(NSWorkspace.shared.frontmostApplication)
@@ -41,9 +41,10 @@ final class PetHostingView:NSHostingView<PetView>{
   if !model.setupComplete || !model.signedIn{show()};if model.signedIn{Task{await model.refresh();if !model.signedIn{show()}}}
  }
  func rememberApp(_ app:NSRunningApplication?){guard let app,app.processIdentifier != ProcessInfo.processInfo.processIdentifier,app.activationPolicy == .regular else{return};model.targetApplication=app;model.targetName=app.localizedName ?? "your active app"}
- func positionBubble(){guard bubble.isVisible else{return};let screen=NSScreen.screens.first(where:{$0.frame.intersects(pet.frame)}) ?? NSScreen.main!;let area=screen.visibleFrame;let height=min(620,max(200,bubbleHost.fittingSize.height));bubble.setContentSize(NSSize(width:410,height:height));let x=min(max(pet.frame.midX-205,area.minX+12),area.maxX-422),y=min(max(pet.frame.maxY+8,area.minY+12),area.maxY-height-12);bubble.setFrameOrigin(NSPoint(x:x,y:y))}
+ func positionBubble(){guard bubble.isVisible else{return};let screen=NSScreen.screens.first(where:{$0.frame.intersects(pet.frame)}) ?? NSScreen.main!;let area=screen.visibleFrame;let height=min(area.height-24,max(220,bubbleHost.fittingSize.height));bubble.setContentSize(NSSize(width:422,height:height));let x=min(max(pet.frame.midX-211,area.minX+12),area.maxX-434),y=min(max(pet.frame.maxY+8,area.minY+12),area.maxY-height-12);bubble.setFrameOrigin(NSPoint(x:x,y:y))}
  func presentBubble(){bubble.makeKeyAndOrderFront(nil);positionBubble()}
- @objc func talk(){presentBubble();if model.setupComplete,model.signedIn{voice.toggle()}}
+ @objc func typeToBuddy(){voice.stop();model.inputMode = .text;presentBubble();NSApp.activate(ignoringOtherApps:true)}
+ @objc func talk(){model.inputMode = .voice;presentBubble();if model.setupComplete,model.signedIn{voice.toggle()}}
  @objc func stopVoice(){voice.stop()}
  @objc func show(){conversation.makeKeyAndOrderFront(nil);NSApp.activate(ignoringOtherApps:true)}
  @objc func follow(){model.follow=true;petVisible=true;pet.orderFrontRegardless()}
@@ -58,7 +59,7 @@ final class PetHostingView:NSHostingView<PetView>{
    var x=visible.maxX-220,y=visible.minY+35
    if let r=DesktopTools.bounds(for:model.targetApplication){let globalTop=NSScreen.screens.first?.frame.maxY ?? screen.frame.maxY;x=r.maxX-200;y=globalTop-r.maxY-55}
    if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion{x+=sin(Double(ticks)/130)*35}
-   aim=NSPoint(x:min(max(x,visible.minX),visible.maxX-200),y:min(max(y,visible.minY),visible.maxY-245))
+   aim=NSPoint(x:min(max(x,visible.minX),visible.maxX-200),y:min(max(y,visible.minY),visible.maxY-290))
   }
   let p=pet.frame.origin;let reduced=NSWorkspace.shared.accessibilityDisplayShouldReduceMotion;let next=reduced ? aim:NSPoint(x:p.x+(aim.x-p.x)*0.06,y:p.y+(aim.y-p.y)*0.06)
   if abs(next.x-p.x)>0.1||abs(next.y-p.y)>0.1{pet.setFrameOrigin(next)}

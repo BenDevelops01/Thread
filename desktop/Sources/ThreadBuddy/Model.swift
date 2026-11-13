@@ -1,4 +1,5 @@
 import SwiftUI
+enum BuddyInputMode {case text,voice}
 import AppKit
 
 struct Buddy: Identifiable { let id:String;let name:String;let color:Color
@@ -48,6 +49,7 @@ struct ActionPlan:Decodable {let reply:String;let actions:[DesktopAction]}
  @Published var appearance=UserDefaults.standard.string(forKey:"native-appearance") ?? "light" {didSet{UserDefaults.standard.set(appearance,forKey:"native-appearance");applyAppearance()}}
  @Published var messages:[ChatMessage]=[]
  @Published var draft=""
+ @Published var inputMode:BuddyInputMode = .text
  @Published var notice=""
  @Published var busy=false
  @Published var signedIn=false
@@ -133,7 +135,7 @@ struct ActionPlan:Decodable {let reply:String;let actions:[DesktopAction]}
   do{let text:String
    if provider=="codex"{_ = try await CodexSubscription.check();_ = try await call("reserve-local");text=try await CodexSubscription.answer(messages:recent,buddy:buddy.name,agent:agentMode,target:targetName,image:sharedScreen?.jpeg)}
    else{var args:[String:Any]=["provider":provider,"model":model,"buddy":buddyID,"mode":agentMode ? "agent":"chat","targetApp":targetName,"messages":recent.map{["role":$0.role,"content":$0.content]}];if let shot=sharedScreen{args["image"]="data:image/jpeg;base64,"+shot.jpeg.base64EncodedString()};let data=try await call("chat",args);let result=try JSONSerialization.jsonObject(with:data) as? [String:Any];guard let answer=result?["text"] as? String else{throw APIError(message:"No answer returned.")};text=answer}
-   messages.append(ChatMessage(role:"user",content:prompt));draft="";screen=nil
+   messages.append(ChatMessage(role:"user",content:prompt));if draft==prompt{draft=""};screen=nil
    if agentMode {
     let cleaned=text.replacingOccurrences(of:"```json",with:"").replacingOccurrences(of:"```",with:"").trimmingCharacters(in:.whitespacesAndNewlines)
     let p=try JSONDecoder().decode(ActionPlan.self,from:Data(cleaned.utf8));guard p.actions.count<=5 else{throw APIError(message:"Too many actions. Ask for a smaller task.")};let validated=try p.actions.map{try $0.validated()};let drawings=validated.filter{["highlight","arrow"].contains($0.type)};plan=validated.filter{!["highlight","arrow"].contains($0.type)};if let shot=sharedScreen,!drawings.isEmpty{ScreenOverlay.shared.show(drawings,snapshot:shot)};if let shot=sharedScreen,let first=plan.first,["click","scroll"].contains(first.type){ScreenOverlay.shared.show([first],snapshot:shot)};messages.append(ChatMessage(role:"assistant",content:p.reply));if voiceReplies{speak(p.reply)}

@@ -4,7 +4,19 @@ import Speech
 import AVFoundation
 import ApplicationServices
 
-@MainActor final class Dictation:NSObject,ObservableObject {
+@MainActor protocol DictationService:AnyObject {
+ var recording:Bool{get}
+ var error:String{get}
+ var autoSubmit:Bool{get set}
+ var allowAppleService:Bool{get set}
+ var onText:(String)->Void{get set}
+ var onFinal:(String)->Void{get set}
+ var onEnded:(String)->Void{get set}
+ func start() async
+ func stop()
+}
+
+@MainActor final class Dictation:NSObject,ObservableObject,DictationService {
  @Published var recording=false
  @Published var error=""
  private let engine=AVAudioEngine()
@@ -36,7 +48,7 @@ import ApplicationServices
   input.installTap(onBus:0,bufferSize:1024,format:format){buffer,_ in req.append(buffer)};installed=true
   do{engine.prepare();try engine.start();recording=true;task=recognizer.recognitionTask(with:req){[weak self] result,e in Task{@MainActor in
    guard self?.request === req else{return}
-   if let result,let self{let text=result.bestTranscription.formattedString;self.latest=text;self.onText(text);self.silence?.cancel();if self.autoSubmit,!text.isEmpty{let work=DispatchWorkItem{Task{@MainActor in guard self.recording else{return};let final=self.latest;self.stop();self.onFinal(final)}};self.silence=work;DispatchQueue.main.asyncAfter(deadline:.now()+1.5,execute:work)};if result.isFinal{let final=self.latest;self.stop();if self.autoSubmit{self.onFinal(final)}}}
+   if let result,let self{let text=result.bestTranscription.formattedString;self.latest=text;self.onText(text);self.silence?.cancel();if self.autoSubmit,!text.isEmpty{let work=DispatchWorkItem{Task{@MainActor in guard self.recording else{return};let final=self.latest;self.stop();self.onFinal(final)}};self.silence=work;DispatchQueue.main.asyncAfter(deadline:.now()+1.5,execute:work)};if result.isFinal{let final=self.latest;self.stop();self.onFinal(final)}}
    if let e,let self{self.error=e.localizedDescription;self.stop();self.onEnded(self.error)}
   }};Task{try? await Task.sleep(for:.seconds(55));if self.request === req{self.stop();self.onEnded("Voice paused after 55 seconds. Tap the microphone to continue.")}}
   }catch{self.error=error.localizedDescription;stop()}

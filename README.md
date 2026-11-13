@@ -100,3 +100,9 @@ Apply `20261107082716_buddy_companion.sql`, deploy `thread-buddy` with `_shared/
 ### Verified beta limits
 
 The existing OpenAI key was validated and stored via the live Vault flow, but an actual model request returned `credit_balance_exhausted` / `insufficient_quota`. Thread now reports that billing issue and restores the request allowance. The actual native Swift model completed sign-in, authenticated quota reservation, a real Codex subscription conversation and a validated window-action preview without an API key. The native beta now supports that subscription path; API-key requests still require available provider credit. Microphone, screen capture and Accessibility actions require user-granted permissions; unsupported languages/apps report actionable errors.
+
+### Mac beta 0.9.0
+
+The floating buddy has separate voice and text controls. Its conversation bubble uses native Liquid Glass on macOS 26+, with a system material fallback on macOS 14–15 and solid surfaces when Reduce Transparency is enabled. The mic inside the prompt dictates a draft without sending; the waveform control starts a conversational voice session. Switching modes preserves an unfinished typed draft. Replying speech still uses the local neural engine.
+
+Release checks and current distribution limitations: [desktop/RELEASE-CHECKS.md](desktop/RELEASE-CHECKS.md).

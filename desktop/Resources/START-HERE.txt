@@ -1,4 +1,4 @@
-THREAD BETA 0.8.0 — Apple silicon, macOS 14+
+THREAD BETA 0.9.0 — Apple silicon, macOS 14+
 
 Drag Thread Beta.app into Applications, then open it there.
 
@@ -9,8 +9,10 @@ for Thread Beta, use it and confirm the launch yourself.
 Do not disable Gatekeeper or run security-removal commands.
 If macOS reports malware or corruption, stop and contact support.
 
-Click the floating pet or press Option-Command-Space to talk.
-Closing Settings keeps the pet running. Click the pet to open its voice bubble.
+Click the pet or its text button to open the prompt bar. The mic
+in the prompt dictates a draft for you to review before sending.
+The waveform button beneath the pet, or Option-Command-Space,
+starts a voice conversation. Closing Settings keeps the pet running.
 Use the menu bar paw icon to pause following, hide the pet or quit.
 
 Sign in or create your account with email.
@@ -19,7 +21,7 @@ Codex CLI signed into ChatGPT, or connect an OpenAI/Anthropic key.
 Your Codex plan limits or provider API charges apply. API keys are
 encrypted in Supabase Vault; Codex credentials stay with Codex.
 
-Start the microphone in the pet bubble. Pause to send your turn;
+Choose Voice and start talking. Pause to send your turn;
 your buddy replies out loud, then listens again. Tap stop to finish.
 On-device recognition requires a supported language. Optional Apple
 speech-service fallback is off by default. Voice needs microphone

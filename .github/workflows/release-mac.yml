@@ -42,10 +42,11 @@ jobs:
           npm ci --prefix desktop/voice --ignore-scripts
           npm audit --prefix desktop/voice --omit=dev --audit-level=high
           desktop/scripts/test-actions.sh
+          desktop/scripts/test-voice.sh
           desktop/scripts/prepare-voice-runtime.sh
           desktop/scripts/package-beta.sh
           app_bundle=$(cat .thread-data/native-bundle-path)
-          codesign --verify --deep --strict "$app_bundle"
+          desktop/scripts/check-bundle.sh "$app_bundle"
           python3 - <<'PY'
           from pathlib import Path
           import hashlib,json,os
@@ -71,7 +72,7 @@ jobs:
           from pathlib import Path
           import json,subprocess
           r=json.loads(Path('web/public/downloads/release.json').read_text())
-          Path('/tmp/thread-release-notes.txt').write_text('Thread Beta '+r['version']+' for Apple silicon, macOS 14+.\n\nLocal Kokoro neural voices, remembered Mac sign-in and a floating multiline composer. The voice model downloads once (about 93 MB). No cloud speech API is used.\n\nAd-hoc signed, not Apple notarized. Install guide: https://trythread.xyz/mac\n\nSHA-256: '+r['sha256']+'\n')
+          Path('/tmp/thread-release-notes.txt').write_text('Thread Beta '+r['version']+' for Apple silicon, macOS 14+.\n\nNative Liquid Glass on macOS 26+, a material fallback on macOS 14–15, separate voice and text controls, draft-only dictation, and local Kokoro neural replies. The voice model downloads once (about 93 MB). No cloud speech API is used.\n\nAd-hoc signed, not Apple notarized. Install guide: https://trythread.xyz/mac\n\nSHA-256: '+r['sha256']+'\n')
           subprocess.run(['gh','release','edit','v'+r['version'],'--notes-file','/tmp/thread-release-notes.txt'],check=True)
           PY
           file_sha=$(gh api "repos/$GH_REPO/contents/web/public/downloads/release.json" --jq .sha)
