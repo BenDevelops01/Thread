@@ -33,7 +33,7 @@ jobs:
           cd "$RUNNER_TEMP"
           curl --fail --location --retry 3 https://nodejs.org/dist/v24.21.0/node-v24.21.0-darwin-arm64.tar.gz -o node-v24.21.0-darwin-arm64.tar.gz
           curl --fail --location --retry 3 https://nodejs.org/dist/v24.21.0/SHASUMS256.txt -o node-shasums.txt
-          rg ' node-v24.21.0-darwin-arm64.tar.gz$' node-shasums.txt | shasum -a 256 -c -
+          grep ' node-v24.21.0-darwin-arm64.tar.gz$' node-shasums.txt | shasum -a 256 -c -
           tar -xzf node-v24.21.0-darwin-arm64.tar.gz
           echo "$RUNNER_TEMP/node-v24.21.0-darwin-arm64/bin" >> "$GITHUB_PATH"
       - name: Validate and package native beta

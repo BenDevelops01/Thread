@@ -17,3 +17,5 @@ coverage/
 desktop/voice/runtime/
 
 web/public/downloads/*.dmg
+
+desktop/voice/node_modules
